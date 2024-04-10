@@ -3,12 +3,13 @@
 ###################################################################################
 # BARC for data plotting
 # Authors/Contributors: Rafael Celestre
-# Rafael.Celestre@esrf.fr
+# Rafael.Celestre@synchrotron-soleil.fr
 # creation: 25.07.2018
-# previously updated: 29.09.2023
-# last update: 25.01.2024 (v.05)
+# previously updated: 25.01.2024 (v.05)
+# last update: 10.04.2024 (v.06)
 ###################################################################################
 
+import warnings
 from copy import deepcopy
 
 import matplotlib.cm as cm
@@ -17,16 +18,32 @@ import numpy as np
 from matplotlib import rcParamsDefault, ticker
 from matplotlib.colors import LogNorm, PowerNorm
 from matplotlib.widgets import EllipseSelector, RectangleSelector
-from scipy.interpolate import RectBivariateSpline, interp2d
 
-
-class Data4Plot:
+def Data4Plot(*args, **kwargs):
     """
-    Class for handling numpy arrays and plotting them always with the same aspect
+    Backward-compatible wrapper for DataPlotter.
+
+    Returns:
+        DataPlotter: Instance of DataPlotter.
+    """
+    warnings.warn("Data4Plot is deprecated. Please use BarcPlotManager instead.", DeprecationWarning)
+    return BarcPlotManager(*args, **kwargs)
+
+
+class BarcPlotManager:
+    """
+    Class for handling numpy arrays and plotting them.
     """
 
-    def __init__(self, image=None, axis_x=None, axis_y=None, sort_ax=False, sort_ax_lim=False):
+    def __init__(self, image=None, axis_x=None, axis_y=None):
+        """
+        Initializes the BarcPlotManager object.
 
+        Args:
+            image (numpy.ndarray, optional): 1D or 2D numpy array representing the image data. Defaults to None.
+            axis_x (numpy.ndarray, optional): Horizontal axis. Defaults to None.
+            axis_y (numpy.ndarray, optional): Vertical axis. Defaults to None.
+        """
         # ------------------------------------------------
         # basic elements of the class
         self.image = image  # 1D or 2D numpy array
@@ -85,14 +102,15 @@ class Data4Plot:
         # 3D plots
         self.Style3D = 'surf'  # contour, wire, surf
 
-        if sort_ax:
+        if self.x is None and self.y is None:
             self.sort_axes()
-        if sort_ax_lim:
-            self.sort_axes_limits()
 
-    def additional_info(self, title='', x_axis='', y_axis='', xmin=None, xmax=None, 
-                        ymin=None, ymax=None, min=None, max=None, sort_ax=True, 
-                        sort_ax_lim=True):
+    def additional_info(self, title='', x_axis='', y_axis='', 
+                        xmin=None, xmax=None, 
+                        ymin=None, ymax=None, 
+                        min=None, max=None, 
+                        sort_ax=True, sort_ax_lim=True):
+
         self.AxLimits = [xmin, xmax, ymin, ymax]
         self.AxLegends = [title, x_axis, y_axis]
         self.MinMax = [min, max]
@@ -106,6 +124,7 @@ class Data4Plot:
 
     def aesthetics(self, dpi=None, LaTex=None, AspectRatio=None, PlotScale=None, 
                    FontsSize=None, grid=None, nbins=None):
+
         if dpi is not None:
             self.dpi = dpi
         if LaTex is not None:
@@ -125,6 +144,7 @@ class Data4Plot:
     def info_1d_plot(self, ColorScheme=None, Label=None, LabelPos=None, LineStyle=None, 
                      FillBetween=None, FillBetweenValue=None,  alpha=None, xticks=None,
                      xticksaxis=None):
+
         if ColorScheme is not None:
             self.ColorScheme = ColorScheme
         if Label is not None:
@@ -148,7 +168,7 @@ class Data4Plot:
     def info_1d_twin(self, twinImage=None, twinX=None, twinAxLegends=None, twinYmin=None, 
                      twinYmax=None, twinColorScheme=None, twinLabel=None, twinLineStyle=None,
                      twinAlpha=None, twinPlotScale=None):
-        
+
         self.twinAxis = True
         self.twinImage = twinImage
         self.twinX = twinX
