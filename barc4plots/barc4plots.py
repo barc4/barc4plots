@@ -18,6 +18,8 @@ import numpy as np
 from matplotlib import rcParamsDefault, ticker
 from matplotlib.colors import LogNorm, PowerNorm
 from matplotlib.widgets import EllipseSelector, RectangleSelector
+from scipy.interpolate import RegularGridInterpolator
+
 
 def Data4Plot(*args, **kwargs):
     """
@@ -98,6 +100,11 @@ class BarcPlotManager:
         self.ColorbarExt = 'neither'              # [ 'neither' | 'both' | 'min' | 'max' ]
         self.Gamma = 0.25
         self.IsPhase = False
+        # ------------------------------------------------
+        # scatter
+        self.s=None   # marker size in points**2
+        self.edgeColors='none'
+        self.monochrome=True
         # ------------------------------------------------
         # 3D plots
         self.Style3D = 'surf'  # contour, wire, surf
@@ -203,8 +210,29 @@ class BarcPlotManager:
             self.IsPhase = IsPhase
         return self
 
-    def info_3d_plot(self):
+    def info_scatter(self, ColorScheme=None, Label=None, LabelPos=None, LineStyle=None, 
+                     alpha=None, s=None, edgecolors=None, monochrome=None):
+
+        if ColorScheme is not None:
+            self.ColorScheme = ColorScheme
+        if Label is not None:
+            self.Label = Label
+        if LabelPos is not None:
+            self.LabelPos = LabelPos
+        if LineStyle is not None:
+            self.LineStyle = LineStyle
+        if s is not None:
+            self.s = s
+        if edgecolors is not None:
+            self.edgecolors = edgecolors
+        if alpha is not None:
+            self.alpha = alpha       
+        if monochrome is not None:
+            self.monochrome = monochrome 
         return self
+    
+    # def info_3d_plot(self):
+        # return self
 
     def sort_axes(self):
         if self.x is None:
@@ -215,6 +243,7 @@ class BarcPlotManager:
         if self.y is None:
             if self.image.ndim == 2:
                 self.y = np.linspace(-self.image.shape[0] / 2, self.image.shape[0] / 2, self.image.shape[0])
+
 
     def sort_axes_limits(self):
         if self.AxLimits[0] is None:
@@ -733,8 +762,8 @@ class BarcPlotManager:
     # ********************** 3D plots
     # ****************************************************************************
 
-    def plot_3d(self):
-        pass
+    # def plot_3d(self):
+    #     pass
 
     # ****************************************************************************
     # ********************** Wavefront coefficients
@@ -863,6 +892,106 @@ class BarcPlotManager:
     # ****************************************************************************
     # ********************** Other 2D plots
     # ****************************************************************************
+
+    def plot_scatter(self, file_name=None, hold=False, enable=True, silent=False, m=6.4, n=4.8):
+        """
+
+        :param file_name:
+        :param enable:
+        :param silent:
+        :param m:
+        :param n:
+        :return:
+        """
+
+        self._plt_settings(self.FontsSize, self.LaTex, _hold=hold, _silent=silent, m=m, n=n)
+
+        if self.AxLegends[0] is not None:
+            plt.title(self.AxLegends[0])
+        if self.AxLegends[1] is not None:
+            plt.xlabel(self.AxLegends[1])
+        if self.AxLegends[2] is not None:
+            plt.ylabel(self.AxLegends[2])
+
+        if self.ColorbarExt is None:
+            self.ColorbarExt = 'neither'
+
+        plt.tick_params(direction='in', which='both')
+        plt.tick_params(axis='x', pad=8)
+
+        if self.AxLimits[1] is None:
+            if self.AxLimits[0] is None:
+                pass
+            else:
+                plt.xlim(xmin=self.AxLimits[0])
+        else:
+            if self.AxLimits[0] is None:
+                plt.xlim(xmax=self.AxLimits[1])
+            else:
+                plt.xlim((self.AxLimits[0], self.AxLimits[1]))
+
+        if self.AxLimits[3] is None:
+            if self.AxLimits[2] is None:
+                pass
+            else:
+                plt.ylim(ymin=self.AxLimits[2])
+        else:
+            if self.AxLimits[2] is None:
+                plt.ylim(ymax=self.AxLimits[3])
+            else:
+                plt.ylim((self.AxLimits[2], self.AxLimits[3]))
+
+        # RC20240424 - small bug for LineStyle = '+'
+        if '-' in self.LineStyle:
+            self.LineStyle = '.'
+            self.edgecolors = 'none'
+
+        # RC20240424 - label not working
+        if self.monochrome:
+            if self.Label is not None:       
+                im = plt.scatter(self.x, self.y, color=self._esrf_colors_1d(self.ColorScheme),
+                                alpha=self.alpha, edgecolors=self.edgecolors, s=self.s, 
+                                marker=self.LineStyle, label=self.Label)
+            else:
+                im = plt.scatter(self.x, self.y, color=self._esrf_colors_1d(self.ColorScheme),
+                    alpha=self.alpha, edgecolors=self.edgecolors, s=self.s, marker=self.LineStyle) 
+        else:
+            k = 500
+            n = len(self.x)
+            dbins = int(2*n**(1/3))
+            Dbins = 2*dbins
+            hist, xedges, yedges = np.histogram2d(self.x, self.y, bins=dbins)
+            hist=k*(hist-np.amin(hist))/(np.amax(hist)-np.amin(hist))
+            f = RegularGridInterpolator((np.linspace(yedges.min(), yedges.max(), dbins),
+                                         np.linspace(xedges.min(), xedges.max(), dbins)), 
+                                        hist, bounds_error=False, fill_value=0)
+            ygrid, xgrid = np.meshgrid(np.linspace(yedges.min(), yedges.max(), Dbins),
+                                       np.linspace(xedges.min(), xedges.max(), Dbins), 
+                                       indexing='ij')
+            hist = f((ygrid, xgrid))
+            # unique_values = np.unique(hist)
+            cmap = self._esrf_colors_2d(self.ColorScheme)
+            colors = cmap(np.linspace(0, 1, k+1))     
+            x_indices = np.digitize(self.x, np.linspace(xedges.min(), xedges.max(), Dbins), right=True)
+            # x_indices[x_indices==hist.shape[1]]=hist.shape[1]-1
+            y_indices = np.digitize(self.y, np.linspace(yedges.min(), yedges.max(), Dbins), right=True)
+            # y_indices[y_indices==hist.shape[0]]=hist.shape[0]-1
+            clr = colors[hist[y_indices, x_indices].astype(int)]
+            im = plt.scatter(self.x, self.y, color=clr, alpha=self.alpha, 
+                             edgecolors=self.edgecolors, s=self.s, marker=self.LineStyle) 
+
+        plt.locator_params(tight=True, nbins=self.nbins)
+
+        if self.grid:
+            plt.grid(linestyle='--', linewidth=0.4, color='dimgrey')
+
+        if self.AspectRatio:
+            im._axes._axes.set_aspect('equal')
+        else:
+            im._axes._axes.set_aspect('auto')
+
+        self._save_and_show(file_name, silent, enable)
+
 
     def plot_quiver(self, fld_X, fld_Y, file_name=None, enable=True, silent=False, m=6.4, n=4.8, kk=50):
         """
