@@ -105,6 +105,9 @@ class BarcPlotManager:
         self.s=None   # marker size in points**2
         self.edgeColors='none'
         self.monochrome=True
+        self.colorLevels = 1000
+        self.nSigma = 5
+        self.refine = 5
         # ------------------------------------------------
         # 3D plots
         self.Style3D = 'surf'  # contour, wire, surf
@@ -210,25 +213,28 @@ class BarcPlotManager:
             self.IsPhase = IsPhase
         return self
 
-    def info_scatter(self, ColorScheme=None, Label=None, LabelPos=None, LineStyle=None, 
-                     alpha=None, s=None, edgecolors=None, monochrome=None):
+    def info_scatter(self, ColorScheme=None, LineStyle=None, alpha=None, s=None, 
+                     edgeColors=None, monochrome=None, colorLevels=None, nSigma=None, 
+                     refine=None):
 
         if ColorScheme is not None:
             self.ColorScheme = ColorScheme
-        if Label is not None:
-            self.Label = Label
-        if LabelPos is not None:
-            self.LabelPos = LabelPos
         if LineStyle is not None:
             self.LineStyle = LineStyle
         if s is not None:
             self.s = s
-        if edgecolors is not None:
-            self.edgecolors = edgecolors
+        if edgeColors is not None:
+            self.edgeColors = edgeColors
         if alpha is not None:
             self.alpha = alpha       
         if monochrome is not None:
             self.monochrome = monochrome 
+        if colorLevels is not None:
+            self.colorLevels = colorLevels
+        if nSigma is not None:
+            self.nSigma = nSigma
+        if refine is not None:
+            self.refine = refine
         return self
     
     # def info_3d_plot(self):
@@ -913,9 +919,6 @@ class BarcPlotManager:
         if self.AxLegends[2] is not None:
             plt.ylabel(self.AxLegends[2])
 
-        if self.ColorbarExt is None:
-            self.ColorbarExt = 'neither'
-
         plt.tick_params(direction='in', which='both')
         plt.tick_params(axis='x', pad=8)
 
@@ -944,41 +947,41 @@ class BarcPlotManager:
         # RC20240424 - small bug for LineStyle = '+'
         if '-' in self.LineStyle:
             self.LineStyle = '.'
-            self.edgecolors = 'none'
+            self.edgeColors = 'none'
 
-        # RC20240424 - label not working
         if self.monochrome:
-            if self.Label is not None:       
-                im = plt.scatter(self.x, self.y, color=self._esrf_colors_1d(self.ColorScheme),
-                                alpha=self.alpha, edgecolors=self.edgecolors, s=self.s, 
-                                marker=self.LineStyle, label=self.Label)
-            else:
-                im = plt.scatter(self.x, self.y, color=self._esrf_colors_1d(self.ColorScheme),
-                    alpha=self.alpha, edgecolors=self.edgecolors, s=self.s, marker=self.LineStyle) 
+            im = plt.scatter(self.x, self.y, color=self._esrf_colors_1d(self.ColorScheme),
+                alpha=self.alpha, edgecolors=self.edgeColors, s=self.s, marker=self.LineStyle) 
+            
+        #RC 20240424 : parametrise the histogram pseudo-histogram
         else:
-            k = 500
-            n = len(self.x)
-            dbins = int(2*n**(1/3))
-            Dbins = 2*dbins
-            hist, xedges, yedges = np.histogram2d(self.x, self.y, bins=dbins)
+
+            wbins = np.min((np.std(self.x), np.std(self.y)))/self.nSigma
+            dbinsx = int((np.amax(self.x)-np.amin(self.x))/wbins)
+            dbinsy = int((np.amax(self.y)-np.amin(self.y))/wbins)
+
+            k = self.colorLevels
+
+            Dbinsx = self.refine*dbinsx
+            Dbinsy = self.refine*dbinsy
+
+            hist, xedges, yedges = np.histogram2d(self.x, self.y, bins=(dbinsy, dbinsx))
             hist=k*(hist-np.amin(hist))/(np.amax(hist)-np.amin(hist))
-            f = RegularGridInterpolator((np.linspace(yedges.min(), yedges.max(), dbins),
-                                         np.linspace(xedges.min(), xedges.max(), dbins)), 
+            f = RegularGridInterpolator((np.linspace(yedges.min(), yedges.max(), dbinsy),
+                                         np.linspace(xedges.min(), xedges.max(), dbinsx)), 
                                         hist, bounds_error=False, fill_value=0)
-            ygrid, xgrid = np.meshgrid(np.linspace(yedges.min(), yedges.max(), Dbins),
-                                       np.linspace(xedges.min(), xedges.max(), Dbins), 
+            ygrid, xgrid = np.meshgrid(np.linspace(yedges.min(), yedges.max(), Dbinsy),
+                                       np.linspace(xedges.min(), xedges.max(), Dbinsx), 
                                        indexing='ij')
             hist = f((ygrid, xgrid))
             # unique_values = np.unique(hist)
             cmap = self._esrf_colors_2d(self.ColorScheme)
             colors = cmap(np.linspace(0, 1, k+1))     
-            x_indices = np.digitize(self.x, np.linspace(xedges.min(), xedges.max(), Dbins), right=True)
-            # x_indices[x_indices==hist.shape[1]]=hist.shape[1]-1
-            y_indices = np.digitize(self.y, np.linspace(yedges.min(), yedges.max(), Dbins), right=True)
-            # y_indices[y_indices==hist.shape[0]]=hist.shape[0]-1
+            x_indices = np.digitize(self.x, np.linspace(xedges.min(), xedges.max(), Dbinsx), right=True)
+            y_indices = np.digitize(self.y, np.linspace(yedges.min(), yedges.max(), Dbinsy), right=True)
             clr = colors[hist[y_indices, x_indices].astype(int)]
             im = plt.scatter(self.x, self.y, color=clr, alpha=self.alpha, 
-                             edgecolors=self.edgecolors, s=self.s, marker=self.LineStyle) 
+                             edgecolors=self.edgeColors, s=self.s, marker=self.LineStyle) 
 
         plt.locator_params(tight=True, nbins=self.nbins)
 
@@ -989,6 +992,201 @@ class BarcPlotManager:
             im._axes._axes.set_aspect('equal')
         else:
             im._axes._axes.set_aspect('auto')
+
+        self._save_and_show(file_name, silent, enable)
+
+
+    def plot_scatter_hist(self, file_name=None, hold=False, enable=True, silent=False, m=6.4, n=4.8):
+        """
+
+        :param file_name:
+        :param enable:
+        :param silent:
+        :param m:
+        :param n:
+        :return:
+        """
+
+        edges = [0, 0, 0, 0]
+    
+        if self.AxLimits[1] is None:
+            if self.AxLimits[0] is None:
+                edges[0] = np.amin(self.x)
+                edges[1] = np.amax(self.x)
+            else:
+                edges[0] = self.AxLimits[0]
+        else:
+            if self.AxLimits[0] is None:
+                edges[1] = self.AxLimits[1]
+            else:
+                edges[0] = self.AxLimits[0]
+                edges[1] = self.AxLimits[1]
+    
+        if self.AxLimits[3] is None:
+            if self.AxLimits[2] is None:
+                edges[2] = np.amin(self.y)
+                edges[3] = np.amax(self.y)
+            else:
+                edges[2] = self.AxLimits[2]
+        else:
+            if self.AxLimits[2] is None:
+                edges[3] = self.AxLimits[3]
+            else:
+                edges[2] = self.AxLimits[2]
+                edges[3] = self.AxLimits[3]
+    
+        if self.AspectRatio is True:
+            dx = edges[1] - edges[0]
+            dy = edges[3] - edges[2]
+        else:
+            dx = m
+            dy = n
+    
+        left, bottom = 0.2, 0.10
+        spacing = 0.02
+        spacing_x = spacing
+        spacing_y = spacing
+        k = 0.25
+        kx = k
+        ky = k
+    
+        if dx >= dy:
+            width = 0.50
+            height = width * dy / dx
+            spacing_y = spacing * dy / dx
+            ky = k * dy / dx
+        else:
+            height = 0.50
+            width = height * dx / dy
+            spacing_x = spacing * dx / dy
+            kx = k * dx / dy
+    
+        rect_image = [left, bottom, width, height]
+        # rect_histx = [left, bottom + height + spacing_x + 0.02, width, kx]
+        # rect_histy = [left + width + spacing_y + 0.02, bottom, ky, height]
+        rect_histx = [left, bottom + height + spacing_x + 0.02, width, kx*.9]
+        rect_histy = [left + width + spacing_x + 0.02, bottom, kx*.9, height]
+        
+        if self.AspectRatio is True:
+            m = 6.4
+            n = 6.4
+    
+        self._plt_settings(self.FontsSize, self.LaTex, _hold=False, _silent=silent, m=m, n=n)
+
+        ax_image = plt.axes(rect_image)
+        ax_image.tick_params(top=False, right=False)
+    
+        plt.xlabel(self.AxLegends[1])
+        plt.ylabel(self.AxLegends[2])
+    
+        ax_histx = plt.axes(rect_histx, sharex=ax_image)
+        ax_histx.tick_params(direction='in', which='both', labelbottom=False, top=True, right=True, colors='black')
+        ax_histx.spines['bottom'].set_color('black')
+        ax_histx.spines['top'].set_color('black')
+        ax_histx.spines['right'].set_color('black')
+        ax_histx.spines['left'].set_color('black')
+    
+        if self.AxLegends[0] is not None:
+            plt.title(self.AxLegends[0])
+    
+        ax_histy = plt.axes(rect_histy, sharey=ax_image)
+        ax_histy.tick_params(direction='in', which='both', labelleft=False, top=True, right=True, colors='black')
+        ax_histy.spines['bottom'].set_color('black')
+        ax_histy.spines['top'].set_color('black')
+        ax_histy.spines['right'].set_color('black')
+        ax_histy.spines['left'].set_color('black')
+
+        if self.AxLimits[1] is None:
+            if self.AxLimits[0] is None:
+                pass
+            else:
+                plt.xlim(xmin=self.AxLimits[0])
+        else:
+            if self.AxLimits[0] is None:
+                plt.xlim(xmax=self.AxLimits[1])
+            else:
+                plt.xlim((self.AxLimits[0], self.AxLimits[1]))
+
+        if self.AxLimits[3] is None:
+            if self.AxLimits[2] is None:
+                pass
+            else:
+                plt.ylim(ymin=self.AxLimits[2])
+        else:
+            if self.AxLimits[2] is None:
+                plt.ylim(ymax=self.AxLimits[3])
+            else:
+                plt.ylim((self.AxLimits[2], self.AxLimits[3]))
+        # ------------------------------------------------------------------------------
+        # RC20240424 - small bug for LineStyle = '+'
+        if '-' in self.LineStyle:
+            self.LineStyle = '.'
+            self.edgeColors = 'none'
+
+        wbins = np.min((np.std(self.x), np.std(self.y)))/self.nSigma
+        dbinsx = int((np.amax(self.x)-np.amin(self.x))/wbins)
+        dbinsy = int((np.amax(self.y)-np.amin(self.y))/wbins)
+
+        if self.monochrome:
+            ax_image.scatter(self.x, self.y, color=self._esrf_colors_1d(self.ColorScheme),
+                alpha=self.alpha, edgecolors=self.edgeColors, s=self.s, marker=self.LineStyle) 
+        else:
+            k = self.colorLevels
+
+            Dbinsx = self.refine*dbinsx
+            Dbinsy = self.refine*dbinsy
+
+            hist, xedges, yedges = np.histogram2d(self.x, self.y, bins=(dbinsy, dbinsx))
+            hist=k*(hist-np.amin(hist))/(np.amax(hist)-np.amin(hist))
+            f = RegularGridInterpolator((np.linspace(yedges.min(), yedges.max(), dbinsy),
+                                         np.linspace(xedges.min(), xedges.max(), dbinsx)), 
+                                        hist, bounds_error=False, fill_value=0)
+            ygrid, xgrid = np.meshgrid(np.linspace(yedges.min(), yedges.max(), Dbinsy),
+                                       np.linspace(xedges.min(), xedges.max(), Dbinsx), 
+                                       indexing='ij')
+            hist = f((ygrid, xgrid))
+            # unique_values = np.unique(hist)
+            cmap = self._esrf_colors_2d(self.ColorScheme)
+            colors = cmap(np.linspace(0, 1, k+1))     
+            x_indices = np.digitize(self.x, np.linspace(xedges.min(), xedges.max(), Dbinsx), right=True)
+            y_indices = np.digitize(self.y, np.linspace(yedges.min(), yedges.max(), Dbinsy), right=True)
+            clr = colors[hist[y_indices, x_indices].astype(int)]
+            ax_image.scatter(self.x, self.y, color=clr, alpha=self.alpha, 
+                             edgecolors=self.edgeColors, s=self.s, marker=self.LineStyle) 
+            
+        ax_image.set_xlim((edges[0], edges[1]))
+        ax_image.set_ylim((edges[2], edges[3]))
+    
+        if self.AspectRatio:
+            ax_image._axes._axes.set_aspect('equal')
+        else:
+            ax_image._axes._axes.set_aspect('auto')
+    
+        ax_image.locator_params(tight=True, nbins=3)
+
+        # histograms
+
+        ax_histx.hist(self.x, bins=dbinsx, color=self._esrf_colors_1d(2), linewidth=1, 
+                      edgecolor=self._esrf_colors_1d(2), histtype="step", alpha=1)
+        ax_histx.set_xlim((edges[0], edges[1]))
+        ax_histx.set_ylim((self.MinMax[0], self.MinMax[1]))
+        ax_histx.locator_params(tight=True, nbins=3)
+        if self.grid:
+            ax_histx.grid(which='major', linestyle='--', linewidth=0.5, color='dimgrey')
+            ax_histx.grid(which='minor', linestyle='--', linewidth=0.5, color='lightgrey')
+
+        ax_histy.hist(self.y, bins=dbinsy, color=self._esrf_colors_1d(2), linewidth=1, 
+                      edgecolor=self._esrf_colors_1d(2), orientation='horizontal', histtype="step")
+        ax_histy.set_ylim((edges[2], edges[3]))
+        ax_histy.set_xlim((self.MinMax[0], self.MinMax[1]))
+        ax_histy.locator_params(tight=True, nbins=3)
+        if self.grid:
+            ax_histy.grid(which='major', linestyle='--', linewidth=0.5, color='dimgrey')
+            ax_histy.grid(which='minor', linestyle='--', linewidth=0.5, color='lightgrey')
+        ax_histx.set_ylabel('[counts]', fontsize='medium')
+        ax_histy.set_xlabel('[counts]', fontsize='medium')
+        # ax_histx.set_ylabel('[counts]')
+        # ax_histy.set_xlabel('[counts]')
 
         self._save_and_show(file_name, silent, enable)
 
