@@ -60,7 +60,7 @@ class BarcPlotManager:
         self.dpi = 400
         self.LaTex = False  # Boolean - LaTex fonts when compiling
         self.AspectRatio = True
-        self.ColorScheme = 0  # see _esrf_colors_1d and _esrf_colors_2d
+        self.ColorScheme = 0  # see _color_palette_1d and _color_palette_2d
         self.PlotScale = 0  
                             # 1D plot: 0 - linear; 1 - semilogY; 2 - semilogX; 3 - loglog
                             # 2D plot: 0 - linear; 1 - log10; 2: Gamma = 0.25 (default)
@@ -86,9 +86,9 @@ class BarcPlotManager:
         self.twinAxis = False
         self.twinImage = None
         self.twinX = None
-        self.twinColorScheme = 1  # see _esrf_colors_1d
+        self.twinColorScheme = 1  # see _color_palette_1d
         self.twinLabel = None
-        self.twinAlpha = 1  # see _esrf_colors_1d
+        self.twinAlpha = 1  # see _color_palette_1d
         self.twinPlotScale = 0
         self.twinAxLegends='twin y-axis'
         self.twinLineStyle='-'
@@ -295,14 +295,15 @@ class BarcPlotManager:
 
     def plot_1d(self, file_name=None, hold=False, enable=True, silent=False, m=6.4 * 1.2, n=4.8):
         """
+        Plots a 1D line graph with optional twin axis.
 
-        :param file_name:
-        :param hold:
-        :param enable:
-        :param silent:
-        :param m:
-        :param n:
-        :return:
+        Parameters:
+            file_name (str): The name of the file to save the plot.
+            hold (bool): If True, multiple plots can be overlaid on the same axes. If False, each plot replaces the previous one.
+            enable (bool): If True, displays the plot. If False, the plot is not displayed.
+            silent (bool): If True, suppresses the display of the plot. If False, the plot is displayed.
+            m (float): The horizontal size of the figure.
+            n (float): The vertical size of the figure.
         """
         def _setTwinAxLimits(twplt):
             if self.twinAxLimits[1] is None:
@@ -372,32 +373,32 @@ class BarcPlotManager:
         if self.Label is not None:
             if self.PlotScale == 0:
                 im = plt.plot(self.x, self.image, self.LineStyle, label=self.Label)
-                plt.setp(im, color=self._esrf_colors_1d(self.ColorScheme), alpha=alpha)
+                plt.setp(im, color=self._color_palette_1d(self.ColorScheme), alpha=alpha)
             elif self.PlotScale == 1:
                 im = plt.semilogy(self.x, self.image, self.LineStyle, label=self.Label)
-                plt.setp(im, color=self._esrf_colors_1d(self.ColorScheme), alpha=alpha)
+                plt.setp(im, color=self._color_palette_1d(self.ColorScheme), alpha=alpha)
             elif self.PlotScale == 2:
                 im = plt.semilogx(self.x, self.image, self.LineStyle, label=self.Label)
-                plt.setp(im, color=self._esrf_colors_1d(self.ColorScheme), alpha=alpha)
+                plt.setp(im, color=self._color_palette_1d(self.ColorScheme), alpha=alpha)
             elif self.PlotScale == 3:
                 im = plt.loglog(self.x, self.image, self.LineStyle, label=self.Label)
-                plt.setp(im, color=self._esrf_colors_1d(self.ColorScheme), alpha=alpha)
+                plt.setp(im, color=self._color_palette_1d(self.ColorScheme), alpha=alpha)
             plt.legend(loc=self.LabelPos)
         else:   # twin axis
             if self.PlotScale == 0:
                 im = plt.plot(self.x, self.image, self.LineStyle)
-                plt.setp(im, color=self._esrf_colors_1d(self.ColorScheme), alpha=alpha)
+                plt.setp(im, color=self._color_palette_1d(self.ColorScheme), alpha=alpha)
             elif self.PlotScale == 1:
                 im = plt.semilogy(self.x, self.image, self.LineStyle)
-                plt.setp(im, color=self._esrf_colors_1d(self.ColorScheme), alpha=alpha)
+                plt.setp(im, color=self._color_palette_1d(self.ColorScheme), alpha=alpha)
             elif self.PlotScale == 2:
                 im = plt.semilogx(self.x, self.image, self.LineStyle)
-                plt.setp(im, color=self._esrf_colors_1d(self.ColorScheme), alpha=alpha)
+                plt.setp(im, color=self._color_palette_1d(self.ColorScheme), alpha=alpha)
             elif self.PlotScale == 3:
                 im = plt.loglog(self.x, self.image, self.LineStyle)
-                plt.setp(im, color=self._esrf_colors_1d(self.ColorScheme), alpha=alpha)
+                plt.setp(im, color=self._color_palette_1d(self.ColorScheme), alpha=alpha)
             if self.twinAxis:        
-                plt.tick_params(axis='y', labelcolor=self._esrf_colors_1d(self.ColorScheme))
+                plt.tick_params(axis='y', labelcolor=self._color_palette_1d(self.ColorScheme))
                 ax2 = plt.twinx()
                 ax2 = _setTwinAxLimits(ax2)
                 twinPlotScale = None
@@ -408,27 +409,27 @@ class BarcPlotManager:
 
                 if twinPlotScale == 0:
                     ax2.plot(self.twinX, self.twinImage, self.twinLineStyle, 
-                             color=self._esrf_colors_1d(self.twinColorScheme), 
+                             color=self._color_palette_1d(self.twinColorScheme), 
                              alpha=self.twinAlpha)
                 elif twinPlotScale == 1:
                     ax2.semilogy(self.twinX, self.twinImage, self.twinLineStyle, 
-                                 color=self._esrf_colors_1d(self.twinColorScheme), 
+                                 color=self._color_palette_1d(self.twinColorScheme), 
                                  alpha=self.twinAlpha)
                 elif twinPlotScale == 2:
                     ax2.semilogx(self.twinX, self.twinImage, self.twinLineStyle,
-                                 color=self._esrf_colors_1d(self.twinColorScheme), 
+                                 color=self._color_palette_1d(self.twinColorScheme), 
                                  alpha=self.twinAlpha)
                 elif twinPlotScale == 3:
                     ax2.loglog(self.twinX, self.twinImage, self.twinLineStyle,
-                               color=self._esrf_colors_1d(self.twinColorScheme),
+                               color=self._color_palette_1d(self.twinColorScheme),
                                alpha=self.twinAlpha)
 
-                ax2.set_ylabel(self.twinAxLegends) #, color=self._esrf_colors_1d(self.twinColorScheme))
-                ax2.tick_params(axis='y', labelcolor=self._esrf_colors_1d(self.twinColorScheme))
+                ax2.set_ylabel(self.twinAxLegends) #, color=self._color_palette_1d(self.twinColorScheme))
+                ax2.tick_params(axis='y', labelcolor=self._color_palette_1d(self.twinColorScheme))
                 ax2.tick_params(direction='in', which='both')
 
         if self.FillBetween is True and self.twinAxis is False:
-            plt.fill_between(self.x, self.FillBetweenValue, self.image, color=self._esrf_colors_1d(self.ColorScheme),
+            plt.fill_between(self.x, self.FillBetweenValue, self.image, color=self._color_palette_1d(self.ColorScheme),
                              alpha=fb_alpha)
 
         if self.PlotScale != 0 or hold is False:
@@ -445,15 +446,20 @@ class BarcPlotManager:
 
     def plot_2d(self, file_name=None, roi='r', get_roi=False, enable=True, silent=False, m=6.4, n=4.8):
         """
+        Plots a 2D image with optional region of interest (ROI) selection.
 
-        :param file_name:
-        :param roi:
-        :param get_roi:
-        :param enable:
-        :param silent:
-        :param m:
-        :param n:
-        :return:
+        Parameters:
+            file_name (str): The name of the file to save the plot.
+            roi (str): Specifies the type of region of interest (ROI) selection. Use 'r' for rectangular ROI or 'e' for elliptical ROI.
+            get_roi (bool): If True, enables interactive selection of the ROI.
+            enable (bool): If True, displays the plot. If False, the plot is not displayed.
+            silent (bool): If True, suppresses the display of the plot. If False, the plot is displayed.
+            m (float): The horizontal size of the figure.
+            n (float): The vertical size of the figure.
+
+        Returns:
+            extents (tuple): A tuple containing the extents of the selected region of interest (ROI) if get_roi is True. 
+                Otherwise, None is returned.
         """
     
         self._plt_settings(self.FontsSize, self.LaTex, _hold=False, _silent=silent, m=m, n=n)
@@ -494,15 +500,15 @@ class BarcPlotManager:
                 plt.ylim((self.AxLimits[2], self.AxLimits[3]))
     
         if self.PlotScale == 0:
-            im = plt.imshow(self.image, cmap=self._esrf_colors_2d(self.ColorScheme),
+            im = plt.imshow(self.image, cmap=self._color_palette_2d(self.ColorScheme),
                             extent=[self.x[0], self.x[-1], self.y[0], self.y[-1]], origin='lower',
                             vmax=self.MinMax[1], vmin=self.MinMax[0])
         elif self.PlotScale == 1:
-            im = plt.imshow(self.image, cmap=self._esrf_colors_2d(self.ColorScheme),
+            im = plt.imshow(self.image, cmap=self._color_palette_2d(self.ColorScheme),
                             extent=[self.x[0], self.x[-1], self.y[0], self.y[-1]], origin='lower',
                             norm=LogNorm(vmax=self.MinMax[1], vmin=self.MinMax[0]))
         else:
-            im = plt.imshow(self.image, cmap=self._esrf_colors_2d(self.ColorScheme),
+            im = plt.imshow(self.image, cmap=self._color_palette_2d(self.ColorScheme),
                             extent=[self.x[0], self.x[-1], self.y[0], self.y[-1]], origin='lower',
                             norm=PowerNorm(self.Gamma, vmax=self.MinMax[1], vmin=self.MinMax[0]))
     
@@ -577,27 +583,33 @@ class BarcPlotManager:
 
         self._save_and_show(file_name, silent, enable)
 
+
     def plot_2d_cuts(self, file_name=None, enable=True, silent=False, m=6.4, n=4.8, x=None, y=None):
         """
+        Plot 2D image and its vertical and horizontal cuts.
 
-        :param file_name:
-        :param enable:
-        :param silent:
-        :param m:
-        :param n:
-        :param x:
-        :param y:
-        :return:
+        Parameters:
+            file_name (str, optional): File path to save the plot. Defaults to None.
+            enable (bool, optional): Whether to display the plot. Defaults to True.
+            silent (bool, optional): Whether to suppress plot output. Defaults to False.
+            m (float, optional): Width of the figure in inches. Defaults to 6.4.
+            n (float, optional): Height of the figure in inches. Defaults to 4.8.
+            x (array-like, optional): X coordinates for the horizontal cut. If not provided, cuts are made around the center of the image.
+            y (array-like, optional): Y coordinates for the vertical cut. If not provided, cuts are made around the center of the image.
         """
         def get_slice(_image, _x, _y, _coords_x, _coords_y):
             """
-    
-            :param image:
-            :param x:
-            :param y:
-            :param coords_x:
-            :param coords_y:
-            :return:
+            Extracts a vertical cut if _coords_x is ':', or a horizontal cut if _coords_y is ':'.
+
+            Parameters:
+                _image (array-like): The 2D image from which to extract the cut.
+                _x (array-like): The x-coordinates associated with the image.
+                _y (array-like): The y-coordinates associated with the image.
+                _coords_x (str): Specifies the coordinates for the horizontal cut. Use ':' to indicate that the cut should be made along the y-axis.
+                _coords_y (str): Specifies the coordinates for the vertical cut. Use ':' to indicate that the cut should be made along the x-axis.
+
+            Returns:
+                tuple: A tuple containing the extracted cut and the corresponding axis values.
             """
             image_for_fit = np.nan_to_num(_image, True)
     
@@ -707,12 +719,12 @@ class BarcPlotManager:
         ax_histy.spines['left'].set_color('black')
     
         if self.PlotScale == 0:
-            ax_image.imshow(self.image, cmap=self._esrf_colors_2d(self.ColorScheme),
+            ax_image.imshow(self.image, cmap=self._color_palette_2d(self.ColorScheme),
                             extent=[self.x[0], self.x[-1], self.y[0], self.y[-1]], origin='lower',
                             vmax=self.MinMax[1], vmin=self.MinMax[0])
     
         if self.PlotScale == 1:
-            ax_image.imshow(self.image, cmap=self._esrf_colors_2d(self.ColorScheme),
+            ax_image.imshow(self.image, cmap=self._color_palette_2d(self.ColorScheme),
                             extent=[self.x[0], self.x[-1], self.y[0], self.y[-1]], origin='lower',
                             norm=LogNorm(vmax=self.MinMax[1], vmin=self.MinMax[0]))
     
@@ -730,10 +742,10 @@ class BarcPlotManager:
         cut_x, axis_x = get_slice(self.image, self.x, self.y, _coords_x=':', _coords_y=y)
     
         if self.PlotScale == 0:
-            ax_histx.plot(self.x, cut_x, color=self._esrf_colors_1d(2))
+            ax_histx.plot(self.x, cut_x, color=self._color_palette_1d(2))
 
         else:
-            ax_histx.semilogy(self.x, cut_x, color=self._esrf_colors_1d(2))
+            ax_histx.semilogy(self.x, cut_x, color=self._color_palette_1d(2))
 
         ax_histx.set_xlim((edges[0], edges[1]))
         ax_histx.set_ylim((self.MinMax[0], self.MinMax[1]))
@@ -748,10 +760,10 @@ class BarcPlotManager:
         cut_y, axis_y = get_slice(self.image, self.x, self.y, _coords_x=x, _coords_y=':')
     
         if self.PlotScale == 0:
-            ax_histy.plot(cut_y, self.y, color=self._esrf_colors_1d(2))
+            ax_histy.plot(cut_y, self.y, color=self._color_palette_1d(2))
 
         else:
-            ax_histy.semilogx(cut_y, axis_y, color=self._esrf_colors_1d(2))
+            ax_histy.semilogx(cut_y, axis_y, color=self._color_palette_1d(2))
 
         ax_histy.set_ylim((edges[2], edges[3]))
         ax_histy.set_xlim((self.MinMax[0], self.MinMax[1]))
@@ -777,15 +789,22 @@ class BarcPlotManager:
 
     def plot_wft_coeffs(self, file_name=None, enable=True, silent=False, pol=0, noll=False, m=10, n=3):
         """
+        Plot wavefront coefficients.
 
-        :param file_name:
-        :param enable:
-        :param silent:
-        :param pol:
-        :param noll:
-        :param m:
-        :param n:
-        :return:
+        Parameters:
+            file_name (str, optional): File path to save the plot. Defaults to None.
+            enable (bool, optional): Whether to display the plot. Defaults to True.
+            silent (bool, optional): Whether to suppress plot output. Defaults to False.
+            pol (int, optional): Type of wavefront polynomial. Defaults to 0.
+            noll (bool, optional): Whether to use Noll indices. Defaults to False.
+            m (float, optional): Width of the figure in inches. Defaults to 10.
+            n (float, optional): Height of the figure in inches. Defaults to 3.
+
+        Note:
+            The `pol` parameter specifies the type of wavefront polynomial:
+            - 0: Circular Zernike Polynomials
+            - 1: Rectangular Zernike Polynomials
+            - 2: Legendre Polynomials
         """
         self._plt_settings(self.FontsSize, self.LaTex, _hold=False, _silent=silent, m=m, n=n)
 
@@ -878,8 +897,8 @@ class BarcPlotManager:
         # plt.xticks(ind, Zern_x_ticks, rotation=60, horizontalalignment= 'right')
         plt.xticks(ind, Zern_x_ticks, rotation=0, horizontalalignment='center')
 
-        plt.setp(p1, color=self._esrf_colors_1d(4))
-        plt.setp(p2, color=self._esrf_colors_1d(5))
+        plt.setp(p1, color=self._color_palette_1d(4))
+        plt.setp(p2, color=self._color_palette_1d(5))
 
         if self.label is not None:
             plt.legend((p1[0], p2[0]), ('Non-symmetric', 'Radially-symmetric'))
@@ -901,13 +920,15 @@ class BarcPlotManager:
 
     def plot_scatter(self, file_name=None, hold=False, enable=True, silent=False, m=6.4, n=4.8):
         """
+        Plot a scatter plot.
 
-        :param file_name:
-        :param enable:
-        :param silent:
-        :param m:
-        :param n:
-        :return:
+        Parameters:
+            file_name (str, optional): File path to save the plot. Defaults to None.
+            hold (bool, optional): Whether to hold the plot. Defaults to False.
+            enable (bool, optional): Whether to display the plot. Defaults to True.
+            silent (bool, optional): Whether to suppress plot output. Defaults to False.
+            m (float, optional): Width of the figure in inches. Defaults to 6.4.
+            n (float, optional): Height of the figure in inches. Defaults to 4.8.
         """
 
         self._plt_settings(self.FontsSize, self.LaTex, _hold=hold, _silent=silent, m=m, n=n)
@@ -950,12 +971,9 @@ class BarcPlotManager:
             self.edgeColors = 'none'
 
         if self.monochrome:
-            im = plt.scatter(self.x, self.y, color=self._esrf_colors_1d(self.ColorScheme),
+            im = plt.scatter(self.x, self.y, color=self._color_palette_1d(self.ColorScheme),
                 alpha=self.alpha, edgecolors=self.edgeColors, s=self.s, marker=self.LineStyle) 
-            
-        #RC 20240424 : parametrise the histogram pseudo-histogram
         else:
-
             wbins = np.min((np.std(self.x), np.std(self.y)))/self.nSigma
             dbinsx = int((np.amax(self.x)-np.amin(self.x))/wbins)
             dbinsy = int((np.amax(self.y)-np.amin(self.y))/wbins)
@@ -975,7 +993,7 @@ class BarcPlotManager:
                                        indexing='ij')
             hist = f((ygrid, xgrid))
             # unique_values = np.unique(hist)
-            cmap = self._esrf_colors_2d(self.ColorScheme)
+            cmap = self._color_palette_2d(self.ColorScheme)
             colors = cmap(np.linspace(0, 1, k+1))     
             x_indices = np.digitize(self.x, np.linspace(xedges.min(), xedges.max(), Dbinsx), right=True)
             y_indices = np.digitize(self.y, np.linspace(yedges.min(), yedges.max(), Dbinsy), right=True)
@@ -998,13 +1016,15 @@ class BarcPlotManager:
 
     def plot_scatter_hist(self, file_name=None, hold=False, enable=True, silent=False, m=6.4, n=4.8):
         """
+        Plot a scatter plot with histograms.
 
-        :param file_name:
-        :param enable:
-        :param silent:
-        :param m:
-        :param n:
-        :return:
+        Parameters:
+            file_name (str, optional): File path to save the plot. Defaults to None.
+            hold (bool, optional): Whether to hold the plot. Defaults to False.
+            enable (bool, optional): Whether to display the plot. Defaults to True.
+            silent (bool, optional): Whether to suppress plot output. Defaults to False.
+            m (float, optional): Width of the figure in inches. Defaults to 6.4.
+            n (float, optional): Height of the figure in inches. Defaults to 4.8.
         """
 
         edges = [0, 0, 0, 0]
@@ -1117,10 +1137,12 @@ class BarcPlotManager:
                 plt.ylim(ymax=self.AxLimits[3])
             else:
                 plt.ylim((self.AxLimits[2], self.AxLimits[3]))
-        # ------------------------------------------------------------------------------
-        # RC20240424 - small bug for LineStyle = '+'
+
         if '-' in self.LineStyle:
             self.LineStyle = '.'
+            self.edgeColors = 'none'
+        if '+' in self.LineStyle:
+            self.LineStyle = 'P'
             self.edgeColors = 'none'
 
         wbins = np.min((np.std(self.x), np.std(self.y)))/self.nSigma
@@ -1128,7 +1150,7 @@ class BarcPlotManager:
         dbinsy = int((np.amax(self.y)-np.amin(self.y))/wbins)
 
         if self.monochrome:
-            ax_image.scatter(self.x, self.y, color=self._esrf_colors_1d(self.ColorScheme),
+            ax_image.scatter(self.x, self.y, color=self._color_palette_1d(self.ColorScheme),
                 alpha=self.alpha, edgecolors=self.edgeColors, s=self.s, marker=self.LineStyle) 
         else:
             k = self.colorLevels
@@ -1146,7 +1168,7 @@ class BarcPlotManager:
                                        indexing='ij')
             hist = f((ygrid, xgrid))
             # unique_values = np.unique(hist)
-            cmap = self._esrf_colors_2d(self.ColorScheme)
+            cmap = self._color_palette_2d(self.ColorScheme)
             colors = cmap(np.linspace(0, 1, k+1))     
             x_indices = np.digitize(self.x, np.linspace(xedges.min(), xedges.max(), Dbinsx), right=True)
             y_indices = np.digitize(self.y, np.linspace(yedges.min(), yedges.max(), Dbinsy), right=True)
@@ -1165,18 +1187,34 @@ class BarcPlotManager:
         ax_image.locator_params(tight=True, nbins=3)
 
         # histograms
-
-        ax_histx.hist(self.x, bins=dbinsx, color=self._esrf_colors_1d(2), linewidth=1, 
-                      edgecolor=self._esrf_colors_1d(2), histtype="step", alpha=1)
+        ax_histx.hist(self.x, bins=dbinsx, color=self._color_palette_1d(2), linewidth=1, 
+                      edgecolor=self._color_palette_1d(2), histtype="step", alpha=1)
         ax_histx.set_xlim((edges[0], edges[1]))
+
+        hx, bx = np.histogram(self.x, dbinsx)
+        hy, by = np.histogram(self.y, dbinsy)
+        hxM = np.amax(hx)
+        hxm = np.amin(hx)
+        hyM = np.amax(hy)
+        hym = np.amin(hy)
+
+        if self.MinMax[1] is None:
+             self.MinMax[1] = np.amax((hxM, hyM))*1.075
+        if self.MinMax[0] is None:
+            if np.amin((hxm, hym))>0.1*np.amax((hxM, hyM)):
+                self.MinMax[0] = np.amin((hxm, hym))*0.05
+            else:
+                print("hey")
+                self.MinMax[0] = -np.amax((hxM, hyM))*0.05
+
         ax_histx.set_ylim((self.MinMax[0], self.MinMax[1]))
         ax_histx.locator_params(tight=True, nbins=3)
         if self.grid:
             ax_histx.grid(which='major', linestyle='--', linewidth=0.5, color='dimgrey')
             ax_histx.grid(which='minor', linestyle='--', linewidth=0.5, color='lightgrey')
 
-        ax_histy.hist(self.y, bins=dbinsy, color=self._esrf_colors_1d(2), linewidth=1, 
-                      edgecolor=self._esrf_colors_1d(2), orientation='horizontal', histtype="step")
+        ax_histy.hist(self.y, bins=dbinsy, color=self._color_palette_1d(2), linewidth=1, 
+                      edgecolor=self._color_palette_1d(2), orientation='horizontal', histtype="step")
         ax_histy.set_ylim((edges[2], edges[3]))
         ax_histy.set_xlim((self.MinMax[0], self.MinMax[1]))
         ax_histy.locator_params(tight=True, nbins=3)
@@ -1246,7 +1284,7 @@ class BarcPlotManager:
             C = np.sqrt(fld_X ** 2 + fld_Y ** 2)
             im = plt.quiver(X[kx::kk, ky::kk], Y[kx::kk, ky::kk], fld_X[kx::kk, ky::kk], fld_Y[kx::kk, ky::kk],
                             C[kx::kk, ky::kk],
-                            cmap=self._esrf_colors_2d(self.ColorScheme), angles='xy', scale_units='xy')
+                            cmap=self._color_palette_2d(self.ColorScheme), angles='xy', scale_units='xy')
             im.set_clim(vmin=self.MinMax[1], vmax=self.MinMax[0])
             if self.PlotScale == 1:
                 plt.colorbar(format='%.0e')
@@ -1273,7 +1311,7 @@ class BarcPlotManager:
                         cb.ax.yaxis.major.formatter = ticker.FuncFormatter(format_func)
         else:
             im = plt.quiver(X[kx::kk, ky::kk], Y[kx::kk, ky::kk], fld_X[kx::kk, ky::kk], fld_Y[kx::kk, ky::kk],
-                            cmap=self._esrf_colors_2d(self.ColorScheme), angles='xy', scale_units='xy')
+                            cmap=self._color_palette_2d(self.ColorScheme), angles='xy', scale_units='xy')
     
         im._axes.set(xlim=(self.x[0], self.x[-1]), ylim=(self.y[0], self.y[-1]))
         plt.locator_params(tight=True, nbins=self.nbins)
@@ -1362,17 +1400,17 @@ class BarcPlotManager:
                 pass
     
         if self.label is not None:
-            N, bins, patches = plt.hist(self.image.flatten(), bins=nbins, color=self._esrf_colors_1d(self.ColorScheme),
+            N, bins, patches = plt.hist(self.image.flatten(), bins=nbins, color=self._color_palette_1d(self.ColorScheme),
                                         alpha=self.alpha, label=self.label, density=norm, stacked=norm,
                                         histtype='bar')
             plt.legend(loc=self.LabelPos)
     
         else:
-            N, bins, patches = plt.hist(self.image.flatten(), bins=nbins, color=self._esrf_colors_1d(self.ColorScheme),
+            N, bins, patches = plt.hist(self.image.flatten(), bins=nbins, color=self._color_palette_1d(self.ColorScheme),
                                         alpha=self.alpha, density=norm, stacked=norm, histtype='bar')
     
         if bold:
-            plt.hist(self.image.flatten(), bins=bins, color=self._esrf_colors_1d(0), alpha=self.alpha, density=norm,
+            plt.hist(self.image.flatten(), bins=bins, color=self._color_palette_1d(0), alpha=self.alpha, density=norm,
                      stacked=norm, histtype='step')
     
         if self.AxLimits[3] is None:
@@ -1392,7 +1430,7 @@ class BarcPlotManager:
     
         if self.FillBetween:
             plt.fill_between(self.x, self.FillBetweenValue, self.image,
-                             color=self._esrf_colors_1d(self.ColorScheme), alpha=self.alpha)
+                             color=self._color_palette_1d(self.ColorScheme), alpha=self.alpha)
     
         if self.PlotScale != 0 or hold is False:
             plt.locator_params(tight=True)#, nbins=self.nbins)
@@ -1409,11 +1447,15 @@ class BarcPlotManager:
     # ****************************************************************************
 
     @staticmethod
-    def _esrf_colors_1d(_scheme):
+    def _color_palette_1d(_scheme):
         """
-        ESRF colour pallet for 1D plots
-        :param _scheme: color number or rgb value
-        :return: rgb for the chosen colour
+        Color palette for 1D plots.
+
+        Parameters:
+            _scheme (int or ndarray): Color number or RGB value.
+
+        Returns:
+            tuple: RGB values for the chosen color.
         """
         if type(_scheme) == np.ndarray:
             return _scheme
@@ -1446,11 +1488,15 @@ class BarcPlotManager:
             return 0., 0., 0.
 
     @staticmethod
-    def _esrf_colors_2d(_scheme):
+    def _color_palette_2d(_scheme):
         """
-        Color maps for 2D plots
-        :param _scheme:
-        :return:
+        Color maps for 2D plots.
+
+        Parameters:
+            _scheme (int): Color map selection.
+
+        Returns:
+            colormap: Matplotlib colormap object.
         """
         # Colour maps reference: https://matplotlib.org/examples/color/colormaps_reference.html
         if _scheme == 0:    # white(1)/black(0) - mimics SRW
@@ -1482,13 +1528,15 @@ class BarcPlotManager:
     @staticmethod
     def _plt_settings(_k=1, _latexstyle=True, _hold=False, _silent=False, m=6.4, n=4.8):
         """
+        Configure plot settings.
 
-        :param _k:
-        :param _latexstyle:
-        :param _hold:
-        :param m:
-        :param n:
-        :return:
+        Parameters:
+            _k (int, optional): Scaling factor for font sizes. Defaults to 1.
+            _latexstyle (bool, optional): Enable LaTeX style for text. Defaults to True.
+            _hold (bool, optional): Enable hold mode for plot. Defaults to False.
+            _silent (bool, optional): Suppress plotting output. Defaults to False.
+            m (float, optional): Width of the figure in inches. Defaults to 6.4.
+            n (float, optional): Height of the figure in inches. Defaults to 4.8.
         """
         plt.rcParams.update(rcParamsDefault)
         if _latexstyle:
@@ -1522,6 +1570,14 @@ class BarcPlotManager:
     # ****************************************************************************
 
     def _save_and_show(self, file_name, silent, enable):
+        """
+        Save and optionally show the plot.
+
+        Parameters:
+            file_name (str): The file path to save the plot. If None, the plot won't be saved.
+            silent (bool): If True, the plot window will be closed after saving.
+            enable (bool): If True, the plot will be displayed.
+        """
         if file_name is not None:
             plt.savefig(file_name, dpi=self.dpi, bbox_inches='tight')
             file_name = file_name.split('/')
