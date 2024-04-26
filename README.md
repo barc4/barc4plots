@@ -1,4 +1,4 @@
-# barc4plots the **BARC** library for plotting
+# barc4plots: the **BARC** library for plotting
 
 barc4plots is a Python package designed to simplify the handling and plotting of numpy arrays. 
 It provides a comprehensive set of functionalities for generating 1D and 2D plots with customizable aesthetics and plot configurations.
@@ -29,4 +29,4 @@ This project is licensed under the GPL-3.0 license.
 
 ## Credits:
 
-barc4plots is developed and maintained by the BARC4.
+barc4plots is developed and maintained by the barc4.

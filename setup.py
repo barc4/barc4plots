@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='barc4plots',
-    version='2024.04.10',
+    version='2024.04.25',
     author='Rafael Celestre',
     author_email='rafael.celestre@synchrotron-soleil.fr',
     description='A Python package for plots',

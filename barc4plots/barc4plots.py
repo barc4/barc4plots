@@ -5,8 +5,8 @@
 # Authors/Contributors: Rafael Celestre
 # Rafael.Celestre@synchrotron-soleil.fr
 # creation: 25.07.2018
-# previously updated: 25.01.2024 (v.05)
-# last update: 10.04.2024 (v.06)
+# previously updated: 10.04.2024 (v.06)
+# last update: 25.04.2024 (v.07)
 ###################################################################################
 
 import warnings
@@ -19,32 +19,22 @@ from matplotlib import rcParamsDefault, ticker
 from matplotlib.colors import LogNorm, PowerNorm
 from matplotlib.widgets import EllipseSelector, RectangleSelector
 from scipy.interpolate import RegularGridInterpolator
+from scipy.stats import moment
 
 
-def Data4Plot(*args, **kwargs):
-    """
-    Backward-compatible wrapper for DataPlotter.
-
-    Returns:
-        DataPlotter: Instance of DataPlotter.
-    """
-    warnings.warn("Data4Plot is deprecated. Please use BarcPlotManager instead.", DeprecationWarning)
-    return BarcPlotManager(*args, **kwargs)
-
-
-class BarcPlotManager:
+class PlotManager:
     """
     Class for handling numpy arrays and plotting them.
     """
 
     def __init__(self, image=None, axis_x=None, axis_y=None):
         """
-        Initializes the BarcPlotManager object.
+        Initializes the PlotManager object.
 
         Args:
             image (numpy.ndarray, optional): 1D or 2D numpy array representing the image data. Defaults to None.
-            axis_x (numpy.ndarray, optional): Horizontal axis. Defaults to None.
-            axis_y (numpy.ndarray, optional): Vertical axis. Defaults to None.
+            axis_x (numpy.ndarray, optional): Horizontal axis/events (for histograms). Defaults to None.
+            axis_y (numpy.ndarray, optional): Vertical axis/events (for histograms). Defaults to None.
         """
         # ------------------------------------------------
         # basic elements of the class
@@ -109,6 +99,19 @@ class BarcPlotManager:
         self.nSigma = 5
         self.refine = 5
         # ------------------------------------------------
+        # histograms
+        self.nbinsHist = None
+        self.wbinsHist = None         
+        self.rule = -1
+        self.discardZeros = False
+        self.norm = False
+        self.bold = True
+        # ------------------------------------------------
+        # quiver plot 
+        self.fld_X = None   # horizontal 2D field
+        self.fld_Y = None   # vertical 2D field
+        self.kk = 50
+        # ------------------------------------------------
         # 3D plots
         self.Style3D = 'surf'  # contour, wire, surf
 
@@ -152,7 +155,7 @@ class BarcPlotManager:
         return self
 
     def info_1d_plot(self, ColorScheme=None, Label=None, LabelPos=None, LineStyle=None, 
-                     FillBetween=None, FillBetweenValue=None,  alpha=None, xticks=None,
+                     FillBetween=None, FillBetweenValue=None, alpha=None, xticks=None,
                      xticksaxis=None):
 
         if ColorScheme is not None:
@@ -237,8 +240,79 @@ class BarcPlotManager:
             self.refine = refine
         return self
     
+    def info_histogram(self, ColorScheme=None, Colorbar=None, ColorbarExt=None,
+                       nbinsHistX=None, nbinsHistY=None, wbinsHist=None, rule=None,
+                       discardZeros=None, norm=None, bold=None):
+
+        if ColorScheme is not None:
+            self.ColorScheme = ColorScheme
+        if Colorbar is not None:
+            self.Colorbar = Colorbar
+        if ColorbarExt is not None:
+            self.ColorbarExt = ColorbarExt    
+        if nbinsHistX is not None:
+            if nbinsHistY is not None:
+                self.nbinsHist = [nbinsHistX, nbinsHistY] 
+            else:
+                self.nbinsHist = [nbinsHistX, None] 
+        if wbinsHist is not None:
+            self.wbinsHist = self.wbinsHist
+        if rule is not None:
+            self.rule = self.rule
+        if discardZeros is not None:
+            self.discardZeros = self.discardZeros
+        if norm is not None:
+            self.norm = norm
+        if bold is not None:
+            self.bold = bold
+        # for more info see: https://en.wikipedia.org/wiki/Histogram#Number_of_bins_and_width
+        if self.nbinsHist is None:
+            # self.nbinsHist = [None, None]
+            n = len(self.x)
+            if self.wbinsHist is not None: 
+                self.nbinsHist = [int((np.amax(self.x)-np.amin(self.x))/self.wbinsHist),
+                                  int((np.amax(self.y)-np.amin(self.y))/self.wbinsHist)]
+            elif rule == -1:
+                self.nbinsHist = np.min((np.std(self.x), np.std(self.y)))/self.nSigma
+                self.nbinsHist = [int((np.amax(self.x)-np.amin(self.x))/self.wbinsHist),
+                                  int((np.amax(self.y)-np.amin(self.y))/self.wbinsHist)]
+            elif rule == 0:    # sqrt
+                self.nbinsHist = [int(np.sqrt(n)), int(np.sqrt(n))]
+            elif rule == 1:    # Sturge
+                self.nbinsHist = [int(np.log2(n))+1, int(np.log2(n))+1]
+            elif rule == 2:    # Rice
+                self.nbinsHist = [int(2*n**(1/3)), int(2*n**(1/3))]
+            elif rule == 3:    # Doane's
+                sigma_g1 = np.sqrt(6*(n-2)/((n+1)*(n+3)))
+                self.nbinsHist = [int(1+np.log2(n)*(1+moment(self.x, order=3)/sigma_g1)),
+                                  int(1+np.log2(n)*(1+moment(self.y, order=3)/sigma_g1))]
+            elif rule == 3:    # Scott's
+                wbins = 3.49*np.amin([np.std(self.x), np.std(self.y)])*n**(-1/3)
+                self.nbinsHist = [int((np.amax(self.x)-np.amin(self.x))/wbins),
+                                  int((np.amax(self.y)-np.amin(self.y))/wbins)]
+            elif rule == 4:    # Terrell–Scott
+                self.nbinsHist = [(2*n)**(1/3), (2*n)**(1/3)]
+
     # def info_3d_plot(self):
         # return self
+
+    def info_quiver(self, ColorScheme=None, Colorbar=None, ColorbarExt=None, fld_X=None,
+                    fld_Y=None, kk=None):
+        if ColorScheme is not None:
+            self.ColorScheme = ColorScheme
+        if Colorbar is not None:
+            self.Colorbar = Colorbar
+        if ColorbarExt is not None:
+            self.ColorbarExt = ColorbarExt
+        if fld_X is not None:
+            self.fld_X = fld_X
+        if fld_Y is not None:
+            self.fld_Y = fld_Y
+        if kk is not None:
+            self.kk = kk            
+
+        return self
+    
 
     def sort_axes(self):
         if self.x is None:
@@ -249,7 +323,6 @@ class BarcPlotManager:
         if self.y is None:
             if self.image.ndim == 2:
                 self.y = np.linspace(-self.image.shape[0] / 2, self.image.shape[0] / 2, self.image.shape[0])
-
 
     def sort_axes_limits(self):
         if self.AxLimits[0] is None:
@@ -920,7 +993,7 @@ class BarcPlotManager:
 
     def plot_scatter(self, file_name=None, hold=False, enable=True, silent=False, m=6.4, n=4.8):
         """
-        Plot a scatter plot.
+        Plot a 2D scatter plot.
 
         Parameters:
             file_name (str, optional): File path to save the plot. Defaults to None.
@@ -1014,13 +1087,12 @@ class BarcPlotManager:
         self._save_and_show(file_name, silent, enable)
 
 
-    def plot_scatter_hist(self, file_name=None, hold=False, enable=True, silent=False, m=6.4, n=4.8):
+    def plot_scatter_hist(self, file_name=None, enable=True, silent=False, m=6.4, n=4.8):
         """
-        Plot a scatter plot with histograms.
+        Plot a 2D scatter plot with histograms.
 
         Parameters:
             file_name (str, optional): File path to save the plot. Defaults to None.
-            hold (bool, optional): Whether to hold the plot. Defaults to False.
             enable (bool, optional): Whether to display the plot. Defaults to True.
             silent (bool, optional): Whether to suppress plot output. Defaults to False.
             m (float, optional): Width of the figure in inches. Defaults to 6.4.
@@ -1229,18 +1301,16 @@ class BarcPlotManager:
         self._save_and_show(file_name, silent, enable)
 
 
-    def plot_quiver(self, fld_X, fld_Y, file_name=None, enable=True, silent=False, m=6.4, n=4.8, kk=50):
+    def plot_quiver(self, file_name=None, enable=True, silent=False, m=6.4, n=4.8):
         """
+        Plots a quiver plot for gradient data.
 
-        :param fld_X:
-        :param fld_Y:
-        :param file_name:
-        :param enable:
-        :param silent:
-        :param m:
-        :param n:
-        :param kk:
-        :return:
+        Parameters:
+            file_name (str, optional): File path to save the plot. Defaults to None.
+            enable (bool, optional): Whether to display the plot. Defaults to True.
+            silent (bool, optional): Whether to suppress plot output. Defaults to False.
+            m (float, optional): Width of the figure in inches. Defaults to 6.4.
+            n (float, optional): Height of the figure in inches. Defaults to 4.8
         """
         self._plt_settings(self.FontsSize, self.LaTex, _hold=False, _silent=silent, m=m, n=n)
     
@@ -1277,14 +1347,16 @@ class BarcPlotManager:
                 plt.ylim((self.AxLimits[2], self.AxLimits[3]))
     
         X, Y = np.meshgrid(self.x, self.y)
-        kx = int((len(self.x)%kk)/2)
-        ky = int((len(self.y)%kk)/2)
+        kx = int((len(self.x)%self.kk)/2)
+        ky = int((len(self.y)%self.kk)/2)
     
         if self.Colorbar:
-            C = np.sqrt(fld_X ** 2 + fld_Y ** 2)
-            im = plt.quiver(X[kx::kk, ky::kk], Y[kx::kk, ky::kk], fld_X[kx::kk, ky::kk], fld_Y[kx::kk, ky::kk],
-                            C[kx::kk, ky::kk],
+            C = np.sqrt(self.fld_X ** 2 + self.fld_Y ** 2)
+            im = plt.quiver(X[kx::self.kk, ky::self.kk], Y[kx::self.kk, ky::self.kk], 
+                            self.fld_X[kx::self.kk, ky::self.kk], self.fld_Y[kx::self.kk, ky::self.kk],
+                            C[kx::self.kk, ky::self.kk],
                             cmap=self._color_palette_2d(self.ColorScheme), angles='xy', scale_units='xy')
+
             im.set_clim(vmin=self.MinMax[1], vmax=self.MinMax[0])
             if self.PlotScale == 1:
                 plt.colorbar(format='%.0e')
@@ -1310,7 +1382,8 @@ class BarcPlotManager:
                     if self.PlotScale != 2:
                         cb.ax.yaxis.major.formatter = ticker.FuncFormatter(format_func)
         else:
-            im = plt.quiver(X[kx::kk, ky::kk], Y[kx::kk, ky::kk], fld_X[kx::kk, ky::kk], fld_Y[kx::kk, ky::kk],
+            im = plt.quiver(X[kx::self.kk, ky::self.kk], Y[kx::self.kk, ky::self.kk], 
+                            self.fld_X[kx::self.kk, ky::self.kk], self.fld_Y[kx::self.kk, ky::self.kk],
                             cmap=self._color_palette_2d(self.ColorScheme), angles='xy', scale_units='xy')
     
         im._axes.set(xlim=(self.x[0], self.x[-1]), ylim=(self.y[0], self.y[-1]))
@@ -1336,23 +1409,20 @@ class BarcPlotManager:
     # ********************** Histograms
     # ****************************************************************************
 
-    def plot_hist_1d(self, file_name=None, enable=True, silent=False, hold=False, m=6.4, n=4.8, dpi=500,
-                 nbins=None, wbins=None, rule='sqrt', norm=False, bold=True):
+    def plot_hist_1d(self, file_name=None, enable=True, silent=False, hold=False, m=6.4, n=4.8):
         """
+        Plots a 1D histogram.
 
-        :param file_name:
-        :param enable:
-        :param silent:
-        :param hold:
-        :param m:
-        :param n:
-        :param dpi:
-        :param nbins:
-        :param wbins:
-        :param rule:
-        :param norm:
-        :param bold:
-        :return:
+        Args:
+            file_name (str, optional): File path to save the plot. Defaults to None.
+            enable (bool, optional): Whether to display the plot. Defaults to True.
+            silent (bool, optional): Whether to suppress plot output. Defaults to False.
+            hold (bool, optional): Whether to hold the current plot. Defaults to False.
+            m (float, optional): Width of the figure in inches. Defaults to 6.4.
+            n (float, optional): Height of the figure in inches. Defaults to 4.8.
+
+        Returns:
+            Tuple[numpy.ndarray, numpy.ndarray]: Tuple containing the bin edges and the number of counts in each bin.
         """
 
         self._plt_settings(self.FontsSize, self.LaTex, _hold=hold, _silent=silent, m=m, n=n)
@@ -1378,40 +1448,19 @@ class BarcPlotManager:
             else:
                 plt.xlim((self.AxLimits[0], self.AxLimits[1]))
     
-        if nbins is None:
-            # https://en.wikipedia.org/wiki/Histogram#Number_of_bins_and_width
-            n = len(self.image.flatten())
-            if wbins is not None:
-                nbins = int((np.amax(self.image)-np.amin(self.image))/wbins)
-                if nbins < 2:
-                    nbins = 2
-            elif rule == 'sqrt':
-                nbins = int(np.sqrt(n))
-            elif rule == 'sturge':
-                nbins = int(np.log2(n))+1
-            elif rule == 'rice':
-                nbins = int(2*n**(1/3))
-            elif rule == 'scotts':
-                wbins = 3.49*np.std(self.image.flatten())*n**(-1/3)
-                nbins = int((np.amax(self.image)-np.amin(self.image))/wbins)
-            elif rule == 'freedman-diaconis':
-                pass
-            elif rule == 'doane':
-                pass
-    
         if self.label is not None:
-            N, bins, patches = plt.hist(self.image.flatten(), bins=nbins, color=self._color_palette_1d(self.ColorScheme),
-                                        alpha=self.alpha, label=self.label, density=norm, stacked=norm,
+            N, bins, patches = plt.hist(self.x, bins=self.nbins, color=self._color_palette_1d(self.ColorScheme),
+                                        alpha=self.alpha, label=self.nbins, density=self.norm, stacked=self.norm,
                                         histtype='bar')
             plt.legend(loc=self.LabelPos)
     
         else:
-            N, bins, patches = plt.hist(self.image.flatten(), bins=nbins, color=self._color_palette_1d(self.ColorScheme),
-                                        alpha=self.alpha, density=norm, stacked=norm, histtype='bar')
+            N, bins, patches = plt.hist(self.x, bins=self.nbins, color=self._color_palette_1d(self.ColorScheme),
+                                        alpha=self.alpha, density=self.norm, stacked=self.norm, histtype='bar')
     
-        if bold:
-            plt.hist(self.image.flatten(), bins=bins, color=self._color_palette_1d(0), alpha=self.alpha, density=norm,
-                     stacked=norm, histtype='step')
+        if self.bold:
+            plt.hist(self.x, bins=bins, color=self._color_palette_1d(0), alpha=self.alpha, density=self.norm,
+                     stacked=self.norm, histtype='step')
     
         if self.AxLimits[3] is None:
             if self.AxLimits[2] is None:
@@ -1428,9 +1477,9 @@ class BarcPlotManager:
             plt.grid(which='major', linestyle='--', linewidth=0.5, color='dimgrey')
             plt.grid(which='minor', linestyle='--', linewidth=0.5, color='lightgrey')
     
-        if self.FillBetween:
-            plt.fill_between(self.x, self.FillBetweenValue, self.image,
-                             color=self._color_palette_1d(self.ColorScheme), alpha=self.alpha)
+        # if self.FillBetween:
+        #     plt.fill_between(self.x, self.FillBetweenValue, self.image,
+        #                      color=self._color_palette_1d(self.ColorScheme), alpha=self.alpha)
     
         if self.PlotScale != 0 or hold is False:
             plt.locator_params(tight=True)#, nbins=self.nbins)
@@ -1442,6 +1491,105 @@ class BarcPlotManager:
 
         return bins, N
     
+
+    def plot_2d_hist(self, file_name=None, enable=True, silent=False, m=6.4, n=4.8):
+        """
+        Plots a 2D histogram.
+
+        Args:
+            file_name (str, optional): File path to save the plot. Defaults to None.
+            enable (bool, optional): Whether to display the plot. Defaults to True.
+            silent (bool, optional): Whether to suppress plot output. Defaults to False.
+            m (float, optional): Width of the figure in inches. Defaults to 6.4.
+            n (float, optional): Height of the figure in inches. Defaults to 4.8.
+
+        """
+        self._plt_settings(self.FontsSize, self.LaTex, _hold=False, _silent=silent, m=m, n=n)
+    
+        if self.AxLegends[0] is not None:
+            plt.title(self.AxLegends[0])
+        if self.AxLegends[1] is not None:
+            plt.xlabel(self.AxLegends[1])
+        if self.AxLegends[2] is not None:
+            plt.ylabel(self.AxLegends[2])
+
+        if self.ColorbarExt is None:
+            self.ColorbarExt = 'neither'
+    
+        plt.tick_params(direction='in', which='both')
+        plt.tick_params(axis='x', pad=8)
+    
+        if self.AxLimits[1] is None:
+            if self.AxLimits[0] is None:
+                pass
+            else:
+                plt.xlim(xmin=self.AxLimits[0])
+        else:
+            if self.AxLimits[0] is None:
+                plt.xlim(xmax=self.AxLimits[1])
+            else:
+                plt.xlim((self.AxLimits[0], self.AxLimits[1]))
+    
+        if self.AxLimits[3] is None:
+            if self.AxLimits[2] is None:
+                pass
+            else:
+                plt.ylim(ymin=self.AxLimits[2])
+        else:
+            if self.AxLimits[2] is None:
+                plt.ylim(ymax=self.AxLimits[3])
+            else:
+                plt.ylim((self.AxLimits[2], self.AxLimits[3]))
+
+        # self.nbinsHist = None
+        # self.wbinsHist = None
+        # self.rule = 'rice'
+        # self.discardZeros = False
+
+        hist, xbins, ybins = np.histogram2d(self.x, self.y, bins=self.nbinsHist)
+
+        if self.discardZeros:
+            hist[hist==0] = np.nan
+            
+        im = plt.imshow(hist, cmap=self._color_palette_2d(self.ColorScheme),
+                        extent=[xbins[0], xbins[-1], ybins[0], ybins[-1]], origin='lower',
+                        vmax=self.MinMax[1], vmin=self.MinMax[0])
+    
+        def format_func(x, pos):
+            x = '%.2f' % x
+            pad = '' if x.startswith('-') else ' '
+            return '{}{}'.format(pad, x)
+    
+        if self.Colorbar:
+            if self.AspectRatio:
+                im_ratio = (ybins[-1] - ybins[0]) / (xbins[-1] - xbins[0])
+            else:
+                im_ratio = 1
+            if self.IsPhase:
+                cb = plt.colorbar(im, fraction=0.046 * im_ratio, pad=0.04, extend=self.ColorbarExt,
+                                    spacing='uniform', ticks=[-2*np.pi, -np.pi, 0, np.pi, 2*np.pi])
+                cb.ax.set_yticklabels(['$-2\pi$', '$-\pi$', '0', '$\pi$', '$2\pi$'])
+            else:
+                cb = plt.colorbar(im, fraction=0.046 * im_ratio, pad=0.04, extend=self.ColorbarExt,
+                                    spacing='uniform')
+
+                tick_locator = ticker.MaxNLocator(nbins=4)
+                cb.locator = tick_locator
+                cb.update_ticks()
+                cb.ax.yaxis.major.formatter = ticker.FuncFormatter(format_func)
+    
+        plt.locator_params(tight=True, nbins=self.nbins)
+
+        if self.grid:
+            plt.grid(linestyle='--', linewidth=0.4, color='dimgrey')
+    
+        if self.AspectRatio:
+            im._axes._axes.set_aspect('equal')
+        else:
+            im._axes._axes.set_aspect('auto')
+
+        self._save_and_show(file_name, silent, enable)
+
     # ****************************************************************************
     # ********************** settings
     # ****************************************************************************
@@ -1587,6 +1735,20 @@ class BarcPlotManager:
 
         if enable:
             plt.show()
+
+# ****************************************************************************
+# ********************** other functions
+# ****************************************************************************
+
+def Data4Plot(*args, **kwargs):
+    """
+    Backward-compatible wrapper for PlotManager.
+
+    Returns:
+        PlotManager: Instance of PlotManager.
+    """
+    warnings.warn("Data4Plot is deprecated. Please use PlotManager instead.", DeprecationWarning)
+    return PlotManager(*args, **kwargs)
 
 
 if __name__ == '__main__':
