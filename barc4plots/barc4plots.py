@@ -132,7 +132,6 @@ class PlotManager:
             self.sort_axes()
         if sort_ax_lim:
             self.sort_axes_limits()
-
         return self
 
     def aesthetics(self, dpi=None, LaTex=None, AspectRatio=None, PlotScale=None, 
@@ -292,7 +291,8 @@ class PlotManager:
                                   int((np.amax(self.y)-np.amin(self.y))/wbins)]
             elif rule == 4:    # Terrell–Scott
                 self.nbinsHist = [(2*n)**(1/3), (2*n)**(1/3)]
-
+            return self
+        
     # def info_3d_plot(self):
         # return self
 
@@ -310,10 +310,8 @@ class PlotManager:
             self.fld_Y = fld_Y
         if kk is not None:
             self.kk = kk            
-
         return self
     
-
     def sort_axes(self):
         if self.x is None:
             if self.image.ndim == 2:
@@ -1609,28 +1607,34 @@ class PlotManager:
             return _scheme
         elif type(_scheme) == int:
             if _scheme == 0:  # black
-                color = (000. / 255, 000. / 255, 000. / 255)
+                color = (000./255, 000./255, 000./255)
             elif _scheme == 1:  # red
-                color = (255. / 255, 000. / 255, 000. / 255)
-            elif _scheme == 2:  # dark blue
-                color = (019. / 255, 037. / 255, 119. / 255)
-            elif _scheme == 3:  # green
-                color = (081. / 255, 160. / 255, 038. / 255)
-            elif _scheme == 4:  # magenta
-                color = (175. / 255, 000. / 255, 124. / 255)
-            elif _scheme == 5:  # dark oranges
-                color = (237. / 255, 119. / 255, 003. / 255)
-            elif _scheme == 6:  # cyan
-                color = (000. / 255, 152. / 255, 212. / 255)
-            elif _scheme == 7:  # yellow
-                color = (232. / 255, 186. / 255, 134. / 255)
-            elif _scheme == 8:  # pink
-                color = (222. / 255, 033. / 255, 115. / 255)
-            elif _scheme == 9:  # dark blue
-                color = (002. / 255, 085. / 255, 127. / 255)
-            elif _scheme == 10:  # pale blue
-                color = (078. / 255, 091. / 255, 153. / 255)
-            return color
+                color = (255./255, 000./255, 000./255)
+            elif _scheme == 2:  # SOLEIL blue
+                color = (000./255, 077./255, 157./255)
+            elif _scheme == 3:  # SOLEIL yellow
+                color = (251./255, 186./255, 007./255)       
+            elif _scheme == 4:  # Environnement et Géoscience (green)
+                color = (092./255, 171./255, 071./255)
+            elif _scheme == 5:  # Matériaux avancés (magenta)
+                color = (156./255, 061./255, 140./255)
+            elif _scheme == 6:  # Santé et Bien-être (red)
+                color = (232./255, 061./255, 041./255)
+            elif _scheme == 7:  # Processus fondamentaux dans les systèmes isolés (blue/green)
+                color = (000./255, 173./255, 168./255)
+            elif _scheme == 8:  # Énergie durable (light blue)
+                color = (232./255, 061./255, 041./255)
+            elif _scheme == 9:  # Patrimoine culturel (dark green)
+                color = (232./255, 061./255, 041./255)
+            elif _scheme == 10:  # ESRF blue
+                color = (019./255, 037./255, 119./255)
+            # elif _scheme == 3:  # Light green
+            #     color = (081. / 255, 160. / 255, 038. / 255)
+            # elif _scheme == 4:  # magenta
+            #     color = (175. / 255, 000. / 255, 124. / 255)
+            # elif _scheme == 5:  # dark orange
+            #     color = (237. / 255, 119. / 255, 003. / 255)
+            
         else:
             print('Colour palette does not exist')
             return 0., 0., 0.
