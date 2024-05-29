@@ -78,7 +78,7 @@ class PlotManager:
         self.twinX = None
         self.twinColorScheme = 1  # see _color_palette_1d
         self.twinLabel = None
-        self.twinAlpha = 1  # see _color_palette_1d
+        self.twinAlpha = 1        # see _color_palette_1d
         self.twinPlotScale = 0
         self.twinAxLegends='twin y-axis'
         self.twinLineStyle='-'
@@ -115,8 +115,17 @@ class PlotManager:
         # 3D plots
         self.Style3D = 'surf'  # contour, wire, surf
 
-        if self.x is None and self.y is None:
-            self.sort_axes()
+        if self.image is not None:
+            if self.x is None and self.y is None:
+                self.sort_axes()
+
+    def get_attributes(self):
+        """
+        Prints all attribute of object
+        """
+
+        for i in (vars(self)):
+            print("{0:10}: {1}".format(i, vars(self)[i]))
 
     def additional_info(self, title='', x_axis='', y_axis='', 
                         xmin=None, xmax=None, 
@@ -1606,25 +1615,25 @@ class PlotManager:
         if type(_scheme) == np.ndarray:
             return _scheme
         elif type(_scheme) == int:
-            if _scheme == 0:  # black
-                color = (000./255, 000./255, 000./255)
-            elif _scheme == 1:  # red
+            if _scheme == -2:  # red
                 color = (255./255, 000./255, 000./255)
-            elif _scheme == 2:  # SOLEIL blue
+            elif _scheme == -1:  # black
+                color = (000./255, 000./255, 000./255)
+            elif _scheme == 0:  # SOLEIL blue
                 color = (000./255, 077./255, 157./255)
-            elif _scheme == 3:  # SOLEIL yellow
+            elif _scheme == 1:  # SOLEIL yellow
                 color = (251./255, 186./255, 007./255)       
-            elif _scheme == 4:  # Environnement et Géoscience (green)
+            elif _scheme == 2:  # Environnement et Géoscience (green)
                 color = (092./255, 171./255, 071./255)
-            elif _scheme == 5:  # Matériaux avancés (magenta)
+            elif _scheme == 3:  # Matériaux avancés (magenta)
                 color = (156./255, 061./255, 140./255)
-            elif _scheme == 6:  # Santé et Bien-être (red)
+            elif _scheme == 4:  # Santé et Bien-être (red)
                 color = (232./255, 061./255, 041./255)
-            elif _scheme == 7:  # Processus fondamentaux dans les systèmes isolés (blue/green)
+            elif _scheme == 5:  # Processus fondamentaux dans les systèmes isolés (blue/green)
                 color = (000./255, 173./255, 168./255)
-            elif _scheme == 8:  # Énergie durable (light blue)
+            elif _scheme == 6:  # Énergie durable (light blue)
                 color = (232./255, 061./255, 041./255)
-            elif _scheme == 9:  # Patrimoine culturel (dark green)
+            elif _scheme == 7:  # Patrimoine culturel (dark green)
                 color = (232./255, 061./255, 041./255)
             elif _scheme == 10:  # ESRF blue
                 color = (019./255, 037./255, 119./255)
@@ -1634,10 +1643,10 @@ class PlotManager:
             #     color = (175. / 255, 000. / 255, 124. / 255)
             # elif _scheme == 5:  # dark orange
             #     color = (237. / 255, 119. / 255, 003. / 255)
-            
+            return color
         else:
             print('Colour palette does not exist')
-            return 0., 0., 0.
+            return (0., 0., 0.)
 
     @staticmethod
     def _color_palette_2d(_scheme):
