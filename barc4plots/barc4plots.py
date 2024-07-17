@@ -1766,4 +1766,4 @@ def Data4Plot(*args, **kwargs):
 
 if __name__ == '__main__':
 
-    print('welcome to barc4plots')
+    print('welcome to barc4plots!')
