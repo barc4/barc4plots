@@ -6,7 +6,7 @@
 # Rafael.Celestre@synchrotron-soleil.fr
 # creation: 25.07.2018
 # previously updated: 10.04.2024 (v.06)
-# last update: 25.04.2024 (v.07)
+# last update: 19.07.2024 (v.07)
 ###################################################################################
 
 import warnings
@@ -64,9 +64,9 @@ class PlotManager:
                            # 'right' 5; 'center left' 6; 'center right' 7; 'lower center' 8; 'upper center' 9;
                            # 'center' 10
         self.LineStyle = '-'  # '-', '--', '-.', ':'
-        # "o" circle; "v" triangle_down; "^" triangle_up; ">" triangle_right; "<" triangle_left;  "8" octagon;
-        # "s" square; "p" pentagon; "P" plus (filled); "*" star; "h" hexagon1; "H" hexagon2; "+" plus; "x" x;
-        # "X" x (filled); "D" diamond;  "d" thin_diamond
+                              # "o" circle; "v" triangle_down; "^" triangle_up; ">" triangle_right; "<" triangle_left;  "8" octagon;
+                              # "s" square; "p" pentagon; "P" plus (filled); "*" star; "h" hexagon1; "H" hexagon2; "+" plus; "x" x;
+                              # "X" x (filled); "D" diamond;  "d" thin_diamond
         self.FillBetween = False  # fill in between the curve and FillBetweenValue with alpha 50%
         self.FillBetweenValue = 0
         self.alpha = 1
@@ -1748,20 +1748,6 @@ class PlotManager:
 
         if enable:
             plt.show()
-
-# ****************************************************************************
-# ********************** other functions
-# ****************************************************************************
-
-def Data4Plot(*args, **kwargs):
-    """
-    Backward-compatible wrapper for PlotManager.
-
-    Returns:
-        PlotManager: Instance of PlotManager.
-    """
-    warnings.warn("Data4Plot is deprecated. Please use PlotManager instead.", DeprecationWarning)
-    return PlotManager(*args, **kwargs)
 
 
 if __name__ == '__main__':
