@@ -19,7 +19,7 @@ from matplotlib import rcParamsDefault, ticker
 from matplotlib.colors import LogNorm, PowerNorm
 from matplotlib.widgets import EllipseSelector, RectangleSelector
 from scipy.interpolate import RegularGridInterpolator
-from scipy.stats import moment
+from scipy.stats import gaussian_kde, moment
 
 
 class PlotManager:
@@ -93,11 +93,9 @@ class PlotManager:
         # ------------------------------------------------
         # scatter
         self.s=None   # marker size in points**2
-        self.edgeColors='none'
+        self.edgeColors='none' # The edge color of the marker. 
         self.monochrome=True
-        self.colorLevels = 1000
-        self.nSigma = 5
-        self.refine = 5
+        self.nSigma = 5   # std/nSigma bin width
         # ------------------------------------------------
         # histograms
         self.nbinsHist = None
@@ -333,20 +331,20 @@ class PlotManager:
 
     def sort_axes_limits(self):
         if self.AxLimits[0] is None:
-            self.AxLimits[0] = self.x[0]
+            self.AxLimits[0] = np.amin(self.x)
         if self.AxLimits[1] is None:
-            self.AxLimits[1] = self.x[-1]
+            self.AxLimits[1] = np.amax(self.x)
         try:
             if self.image.ndim == 2:
                 if self.AxLimits[2] is None:
-                    self.AxLimits[2] = self.y[0]
+                    self.AxLimits[2] = np.amin(self.y)
                 if self.AxLimits[3] is None:
-                    self.AxLimits[3] = self.y[-1]
+                    self.AxLimits[3] = np.amax(self.y)
         except:  # patch for quiver plot
             if self.AxLimits[2] is None:
-                self.AxLimits[2] = self.y[0]
+                self.AxLimits[2] = np.amin(self.y)
             if self.AxLimits[3] is None:
-                self.AxLimits[3] = self.y[-1]
+                self.AxLimits[3] = np.amax(self.y)
 
     def get_roi_coords(self, coords='p', roi='r'):
         """
@@ -822,10 +820,10 @@ class PlotManager:
         cut_x, axis_x = get_slice(self.image, self.x, self.y, _coords_x=':', _coords_y=y)
     
         if self.PlotScale == 0:
-            ax_histx.plot(self.x, cut_x, color=self._color_palette_1d(2))
+            ax_histx.plot(self.x, cut_x, color=self._color_palette_1d(0))
 
         else:
-            ax_histx.semilogy(self.x, cut_x, color=self._color_palette_1d(2))
+            ax_histx.semilogy(self.x, cut_x, color=self._color_palette_1d(0))
 
         ax_histx.set_xlim((edges[0], edges[1]))
         ax_histx.set_ylim((self.MinMax[0], self.MinMax[1]))
@@ -840,10 +838,10 @@ class PlotManager:
         cut_y, axis_y = get_slice(self.image, self.x, self.y, _coords_x=x, _coords_y=':')
     
         if self.PlotScale == 0:
-            ax_histy.plot(cut_y, self.y, color=self._color_palette_1d(2))
+            ax_histy.plot(cut_y, self.y, color=self._color_palette_1d(0))
 
         else:
-            ax_histy.semilogx(cut_y, axis_y, color=self._color_palette_1d(2))
+            ax_histy.semilogx(cut_y, axis_y, color=self._color_palette_1d(0))
 
         ax_histy.set_ylim((edges[2], edges[3]))
         ax_histy.set_xlim((self.MinMax[0], self.MinMax[1]))
@@ -1054,30 +1052,13 @@ class PlotManager:
             im = plt.scatter(self.x, self.y, color=self._color_palette_1d(self.ColorScheme),
                 alpha=self.alpha, edgecolors=self.edgeColors, s=self.s, marker=self.LineStyle) 
         else:
-            wbins = np.min((np.std(self.x), np.std(self.y)))/self.nSigma
-            dbinsx = int((np.amax(self.x)-np.amin(self.x))/wbins)
-            dbinsy = int((np.amax(self.y)-np.amin(self.y))/wbins)
+            xy = np.vstack([self.x, self.y])
+            z = gaussian_kde(xy)(xy)
+            z = z / z.max()
 
-            k = self.colorLevels
-
-            Dbinsx = self.refine*dbinsx
-            Dbinsy = self.refine*dbinsy
-
-            hist, xedges, yedges = np.histogram2d(self.x, self.y, bins=(dbinsy, dbinsx))
-            hist=k*(hist-np.amin(hist))/(np.amax(hist)-np.amin(hist))
-            f = RegularGridInterpolator((np.linspace(yedges.min(), yedges.max(), dbinsy),
-                                         np.linspace(xedges.min(), xedges.max(), dbinsx)), 
-                                        hist, bounds_error=False, fill_value=0)
-            ygrid, xgrid = np.meshgrid(np.linspace(yedges.min(), yedges.max(), Dbinsy),
-                                       np.linspace(xedges.min(), xedges.max(), Dbinsx), 
-                                       indexing='ij')
-            hist = f((ygrid, xgrid))
-            # unique_values = np.unique(hist)
             cmap = self._color_palette_2d(self.ColorScheme)
-            colors = cmap(np.linspace(0, 1, k+1))     
-            x_indices = np.digitize(self.x, np.linspace(xedges.min(), xedges.max(), Dbinsx), right=True)
-            y_indices = np.digitize(self.y, np.linspace(yedges.min(), yedges.max(), Dbinsy), right=True)
-            clr = colors[hist[y_indices, x_indices].astype(int)]
+            clr = cmap(z)
+
             im = plt.scatter(self.x, self.y, color=clr, alpha=self.alpha, 
                              edgecolors=self.edgeColors, s=self.s, marker=self.LineStyle) 
 
@@ -1224,34 +1205,17 @@ class PlotManager:
             self.LineStyle = 'P'
             self.edgeColors = 'none'
 
-        wbins = np.min((np.std(self.x), np.std(self.y)))/self.nSigma
-        dbinsx = int((np.amax(self.x)-np.amin(self.x))/wbins)
-        dbinsy = int((np.amax(self.y)-np.amin(self.y))/wbins)
-
         if self.monochrome:
             ax_image.scatter(self.x, self.y, color=self._color_palette_1d(self.ColorScheme),
                 alpha=self.alpha, edgecolors=self.edgeColors, s=self.s, marker=self.LineStyle) 
         else:
-            k = self.colorLevels
+            xy = np.vstack([self.x, self.y])
+            z = gaussian_kde(xy)(xy)
+            z = z / z.max()
 
-            Dbinsx = self.refine*dbinsx
-            Dbinsy = self.refine*dbinsy
-
-            hist, xedges, yedges = np.histogram2d(self.x, self.y, bins=(dbinsy, dbinsx))
-            hist=k*(hist-np.amin(hist))/(np.amax(hist)-np.amin(hist))
-            f = RegularGridInterpolator((np.linspace(yedges.min(), yedges.max(), dbinsy),
-                                         np.linspace(xedges.min(), xedges.max(), dbinsx)), 
-                                        hist, bounds_error=False, fill_value=0)
-            ygrid, xgrid = np.meshgrid(np.linspace(yedges.min(), yedges.max(), Dbinsy),
-                                       np.linspace(xedges.min(), xedges.max(), Dbinsx), 
-                                       indexing='ij')
-            hist = f((ygrid, xgrid))
-            # unique_values = np.unique(hist)
             cmap = self._color_palette_2d(self.ColorScheme)
-            colors = cmap(np.linspace(0, 1, k+1))     
-            x_indices = np.digitize(self.x, np.linspace(xedges.min(), xedges.max(), Dbinsx), right=True)
-            y_indices = np.digitize(self.y, np.linspace(yedges.min(), yedges.max(), Dbinsy), right=True)
-            clr = colors[hist[y_indices, x_indices].astype(int)]
+            clr = cmap(z)
+
             ax_image.scatter(self.x, self.y, color=clr, alpha=self.alpha, 
                              edgecolors=self.edgeColors, s=self.s, marker=self.LineStyle) 
             
@@ -1265,9 +1229,18 @@ class PlotManager:
     
         ax_image.locator_params(tight=True, nbins=3)
 
+        if self.grid:
+            ax_image.grid(linestyle='--', linewidth=0.4, color='dimgrey')
+
         # histograms
-        ax_histx.hist(self.x, bins=dbinsx, color=self._color_palette_1d(2), linewidth=1, 
-                      edgecolor=self._color_palette_1d(2), histtype="step", alpha=1)
+        wbinsx = np.std(self.x)/self.nSigma
+        wbinsy = np.std(self.y)/self.nSigma
+
+        dbinsx = int((np.amax(self.x)-np.amin(self.x))/wbinsx)
+        dbinsy = int((np.amax(self.y)-np.amin(self.y))/wbinsy)
+
+        ax_histx.hist(self.x, bins=dbinsx, color=self._color_palette_1d(0), linewidth=1, 
+                      edgecolor=self._color_palette_1d(0), histtype="step", alpha=1)
         ax_histx.set_xlim((edges[0], edges[1]))
 
         hx, bx = np.histogram(self.x, dbinsx)
@@ -1292,8 +1265,8 @@ class PlotManager:
             ax_histx.grid(which='major', linestyle='--', linewidth=0.5, color='dimgrey')
             ax_histx.grid(which='minor', linestyle='--', linewidth=0.5, color='lightgrey')
 
-        ax_histy.hist(self.y, bins=dbinsy, color=self._color_palette_1d(2), linewidth=1, 
-                      edgecolor=self._color_palette_1d(2), orientation='horizontal', histtype="step")
+        ax_histy.hist(self.y, bins=dbinsy, color=self._color_palette_1d(0), linewidth=1, 
+                      edgecolor=self._color_palette_1d(0), orientation='horizontal', histtype="step")
         ax_histy.set_ylim((edges[2], edges[3]))
         ax_histy.set_xlim((self.MinMax[0], self.MinMax[1]))
         ax_histy.locator_params(tight=True, nbins=3)
