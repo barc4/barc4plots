@@ -90,6 +90,8 @@ class PlotManager:
         self.ColorbarExt = 'neither'              # [ 'neither' | 'both' | 'min' | 'max' ]
         self.Gamma = 0.25
         self.IsPhase = False
+        self.showXhist = True
+        self.showYhist = True
         # ------------------------------------------------
         # scatter
         self.s=None   # marker size in points**2
@@ -209,7 +211,7 @@ class PlotManager:
         return self
 
     def info_2d_plot(self, ColorScheme=None, Colorbar=None, ColorbarExt=None, 
-                     Gamma=None, IsPhase=None):
+                     Gamma=None, IsPhase=None, showXhist=None, showYhist=None):
         if ColorScheme is not None:
             self.ColorScheme = ColorScheme
         if Colorbar is not None:
@@ -220,11 +222,15 @@ class PlotManager:
             self.Gamma = Gamma
         if IsPhase is not None:
             self.IsPhase = IsPhase
+        if showXhist is not None:
+            self.showXhist = showXhist
+        if showYhist is not None:
+            self.showYhist = showYhist
         return self
 
     def info_scatter(self, ColorScheme=None, LineStyle=None, alpha=None, s=None, 
-                     edgeColors=None, monochrome=None, colorLevels=None, nSigma=None, 
-                     refine=None):
+                     edgeColors=None, monochrome=None, sort_axes=False,
+                     showXhist=None, showYhist=None, **kwargs):
 
         if ColorScheme is not None:
             self.ColorScheme = ColorScheme
@@ -238,12 +244,12 @@ class PlotManager:
             self.alpha = alpha       
         if monochrome is not None:
             self.monochrome = monochrome 
-        if colorLevels is not None:
-            self.colorLevels = colorLevels
-        if nSigma is not None:
-            self.nSigma = nSigma
-        if refine is not None:
-            self.refine = refine
+        # if sort_axes is True:
+        #     self.sort_scatter_limits(**kwargs)
+        if showXhist is not None:
+            self.showXhist = showXhist
+        if showYhist is not None:
+            self.showYhist = showYhist
         return self
     
     def info_histogram(self, ColorScheme=None, Colorbar=None, ColorbarExt=None,
@@ -262,11 +268,11 @@ class PlotManager:
             else:
                 self.nbinsHist = [nbinsHistX, None] 
         if wbinsHist is not None:
-            self.wbinsHist = self.wbinsHist
+            self.wbinsHist = wbinsHist
         if rule is not None:
             self.rule = self.rule
         if discardZeros is not None:
-            self.discardZeros = self.discardZeros
+            self.discardZeros = discardZeros
         if norm is not None:
             self.norm = norm
         if bold is not None:
@@ -328,6 +334,36 @@ class PlotManager:
         if self.y is None:
             if self.image.ndim == 2:
                 self.y = np.linspace(-self.image.shape[0] / 2, self.image.shape[0] / 2, self.image.shape[0])
+
+    # def sort_scatter_limits(self, mode='independent'):
+    #     """
+    #     Calculate the range for plotting based on the given vectors.
+
+    #     mode: str, optional
+    #         The mode for calculating the range. Can be 'independent' or 'same'.
+    #         'independent' calculates ranges independently for X and Y.
+    #         'same' calculates a single range based on the maximum of X and Y.
+
+    #     """
+    #     # Calculate the max absolute values for X and Y vectors
+    #     max_abs_X = max(self.x)*1.05
+    #     max_abs_Y = max(self.y)*1.05
+
+    #     min_abs_X = min(self.x)*1.05
+    #     min_abs_Y = min(self.y)*1.05
+
+    #     if mode == 'independent':
+    #         # Independent ranges for X and Y
+    #         xmin, xmax = -max_abs_X, max_abs_X
+    #         ymin, ymax = -max_abs_Y, max_abs_Y
+    #     elif mode == 'same':
+    #         # Same range for both X and Y based on the max of max_abs_X and max_abs_Y
+    #         max_abs = max(max_abs_X, max_abs_Y)
+    #         xmin, xmax = -max_abs, max_abs
+    #         ymin, ymax = -max_abs, max_abs
+    #     else:
+    #         raise ValueError("Invalid mode. Use 'independent' or 'same'.")
+
 
     def sort_axes_limits(self):
         if self.AxLimits[0] is None:
@@ -1061,6 +1097,23 @@ class PlotManager:
 
             im = plt.scatter(self.x, self.y, color=clr, alpha=self.alpha, 
                              edgecolors=self.edgeColors, s=self.s, marker=self.LineStyle) 
+            # if self.Colorbar:
+            #     def format_func(x, pos):
+            #         x = '%.2f' % x
+            #         pad = '' if x.startswith('-') else ' '
+            #         return '{}{}'.format(pad, x)
+                
+            #     if self.AspectRatio:
+            #         im_ratio = (self.y[-1] - self.y[0]) / (self.x[-1] - self.x[0])
+            #     else:
+            #         im_ratio = 1
+            #     cb = plt.colorbar(im, fraction=0.046 * im_ratio, pad=0.04, extend=self.ColorbarExt,
+            #                                         spacing='uniform')
+            #     tick_locator = ticker.MaxNLocator(nbins=4)
+            #     cb.locator = tick_locator
+            #     cb.update_ticks()
+            #     if self.PlotScale != 2:
+            #         cb.ax.yaxis.major.formatter = ticker.FuncFormatter(format_func)
 
         plt.locator_params(tight=True, nbins=self.nbins)
 
@@ -1158,23 +1211,24 @@ class PlotManager:
     
         plt.xlabel(self.AxLegends[1])
         plt.ylabel(self.AxLegends[2])
-    
-        ax_histx = plt.axes(rect_histx, sharex=ax_image)
-        ax_histx.tick_params(direction='in', which='both', labelbottom=False, top=True, right=True, colors='black')
-        ax_histx.spines['bottom'].set_color('black')
-        ax_histx.spines['top'].set_color('black')
-        ax_histx.spines['right'].set_color('black')
-        ax_histx.spines['left'].set_color('black')
+        if self.showXhist:
+            ax_histx = plt.axes(rect_histx, sharex=ax_image)
+            ax_histx.tick_params(direction='in', which='both', labelbottom=False, top=True, right=True, colors='black')
+            ax_histx.spines['bottom'].set_color('black')
+            ax_histx.spines['top'].set_color('black')
+            ax_histx.spines['right'].set_color('black')
+            ax_histx.spines['left'].set_color('black')
     
         if self.AxLegends[0] is not None:
             plt.title(self.AxLegends[0])
-    
-        ax_histy = plt.axes(rect_histy, sharey=ax_image)
-        ax_histy.tick_params(direction='in', which='both', labelleft=False, top=True, right=True, colors='black')
-        ax_histy.spines['bottom'].set_color('black')
-        ax_histy.spines['top'].set_color('black')
-        ax_histy.spines['right'].set_color('black')
-        ax_histy.spines['left'].set_color('black')
+            
+        if self.showYhist:
+            ax_histy = plt.axes(rect_histy, sharey=ax_image)
+            ax_histy.tick_params(direction='in', which='both', labelleft=False, top=True, right=True, colors='black')
+            ax_histy.spines['bottom'].set_color('black')
+            ax_histy.spines['top'].set_color('black')
+            ax_histy.spines['right'].set_color('black')
+            ax_histy.spines['left'].set_color('black')
 
         if self.AxLimits[1] is None:
             if self.AxLimits[0] is None:
@@ -1239,10 +1293,6 @@ class PlotManager:
         dbinsx = int((np.amax(self.x)-np.amin(self.x))/wbinsx)
         dbinsy = int((np.amax(self.y)-np.amin(self.y))/wbinsy)
 
-        ax_histx.hist(self.x, bins=dbinsx, color=self._color_palette_1d(0), linewidth=1, 
-                      edgecolor=self._color_palette_1d(0), histtype="step", alpha=1)
-        ax_histx.set_xlim((edges[0], edges[1]))
-
         hx, bx = np.histogram(self.x, dbinsx)
         hy, by = np.histogram(self.y, dbinsy)
         hxM = np.amax(hx)
@@ -1251,32 +1301,39 @@ class PlotManager:
         hym = np.amin(hy)
 
         if self.MinMax[1] is None:
-             self.MinMax[1] = np.amax((hxM, hyM))*1.075
+            self.MinMax[1] = np.amax((hxM, hyM))*1.075
         if self.MinMax[0] is None:
             if np.amin((hxm, hym))>0.1*np.amax((hxM, hyM)):
                 self.MinMax[0] = np.amin((hxm, hym))*0.05
             else:
-                print("hey")
                 self.MinMax[0] = -np.amax((hxM, hyM))*0.05
 
-        ax_histx.set_ylim((self.MinMax[0], self.MinMax[1]))
-        ax_histx.locator_params(tight=True, nbins=3)
-        if self.grid:
-            ax_histx.grid(which='major', linestyle='--', linewidth=0.5, color='dimgrey')
-            ax_histx.grid(which='minor', linestyle='--', linewidth=0.5, color='lightgrey')
+        if self.showXhist:
+            ax_histx.hist(self.x, bins=dbinsx, color=self._color_palette_1d(0), linewidth=1, 
+                        edgecolor=self._color_palette_1d(0), histtype="step", alpha=1)
+            ax_histx.set_xlim((edges[0], edges[1]))
 
-        ax_histy.hist(self.y, bins=dbinsy, color=self._color_palette_1d(0), linewidth=1, 
-                      edgecolor=self._color_palette_1d(0), orientation='horizontal', histtype="step")
-        ax_histy.set_ylim((edges[2], edges[3]))
-        ax_histy.set_xlim((self.MinMax[0], self.MinMax[1]))
-        ax_histy.locator_params(tight=True, nbins=3)
-        if self.grid:
-            ax_histy.grid(which='major', linestyle='--', linewidth=0.5, color='dimgrey')
-            ax_histy.grid(which='minor', linestyle='--', linewidth=0.5, color='lightgrey')
-        ax_histx.set_ylabel('[counts]', fontsize='medium')
-        ax_histy.set_xlabel('[counts]', fontsize='medium')
-        # ax_histx.set_ylabel('[counts]')
-        # ax_histy.set_xlabel('[counts]')
+
+
+            ax_histx.set_ylim((self.MinMax[0], self.MinMax[1]))
+            ax_histx.locator_params(tight=True, nbins=3)
+            if self.grid:
+                ax_histx.grid(which='major', linestyle='--', linewidth=0.5, color='dimgrey')
+                ax_histx.grid(which='minor', linestyle='--', linewidth=0.5, color='lightgrey')
+            ax_histx.set_ylabel('[counts]', fontsize='medium')
+
+        if self.showYhist:
+            ax_histy.hist(self.y, bins=dbinsy, color=self._color_palette_1d(0), linewidth=1, 
+                        edgecolor=self._color_palette_1d(0), orientation='horizontal', histtype="step")
+            ax_histy.set_ylim((edges[2], edges[3]))
+            ax_histy.set_xlim((self.MinMax[0], self.MinMax[1]))
+            ax_histy.locator_params(tight=True, nbins=3)
+            if self.grid:
+                ax_histy.grid(which='major', linestyle='--', linewidth=0.5, color='dimgrey')
+                ax_histy.grid(which='minor', linestyle='--', linewidth=0.5, color='lightgrey')
+            ax_histy.set_xlabel('[counts]', fontsize='medium')
+            # ax_histx.set_ylabel('[counts]')
+            # ax_histy.set_xlabel('[counts]')
 
         self._save_and_show(file_name, silent, enable)
 
@@ -1520,11 +1577,6 @@ class PlotManager:
                 plt.ylim(ymax=self.AxLimits[3])
             else:
                 plt.ylim((self.AxLimits[2], self.AxLimits[3]))
-
-        # self.nbinsHist = None
-        # self.wbinsHist = None
-        # self.rule = 'rice'
-        # self.discardZeros = False
 
         hist, xbins, ybins = np.histogram2d(self.x, self.y, bins=self.nbinsHist)
 
