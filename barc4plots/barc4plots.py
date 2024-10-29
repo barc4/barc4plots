@@ -407,7 +407,7 @@ class PlotManager:
     # ********************** 1D plots
     # ****************************************************************************
 
-    def plot_1d(self, file_name=None, hold=False, enable=True, silent=False, m=6.4 * 1.2, n=4.8):
+    def plot_1d(self, file_name=None, hold=False, enable=True, silent=False, m=7.0, n=4.2):
         """
         Plots a 1D line graph with optional twin axis.
 
@@ -1637,37 +1637,31 @@ class PlotManager:
         Returns:
             tuple: RGB values for the chosen color.
         """
-        if type(_scheme) == np.ndarray:
+        if type(_scheme) is np.ndarray:
             return _scheme
-        elif type(_scheme) == int:
+        elif type(_scheme) is int:
             if _scheme == -2:  # red
                 color = (255./255, 000./255, 000./255)
             elif _scheme == -1:  # black
                 color = (000./255, 000./255, 000./255)
-            elif _scheme == 0:  # SOLEIL blue
+            elif _scheme == 0:  # SOLEIL Blue
                 color = (000./255, 077./255, 157./255)
-            elif _scheme == 1:  # SOLEIL yellow
-                color = (251./255, 186./255, 007./255)       
-            elif _scheme == 2:  # Environnement et Géoscience (green)
-                color = (092./255, 171./255, 071./255)
-            elif _scheme == 3:  # Matériaux avancés (magenta)
+            elif _scheme == 1:  # Dark Red
+                color = (190./255, 030./255, 045./255)  # (150./255, 020./255, 030./255)
+            elif _scheme == 2:  # Light Green ESRF
+                color = (081./255, 160./255, 038./255)
+            elif _scheme == 3:  # Magenta
                 color = (156./255, 061./255, 140./255)
-            elif _scheme == 4:  # Santé et Bien-être (red)
-                color = (232./255, 061./255, 041./255)
-            elif _scheme == 5:  # Processus fondamentaux dans les systèmes isolés (blue/green)
+            elif _scheme == 4:  # Dark Orange ESRF
+                color = (237./255, 119./255, 003./255)
+            elif _scheme == 5:  # Blue/Green
                 color = (000./255, 173./255, 168./255)
-            elif _scheme == 6:  # Énergie durable (light blue)
-                color = (232./255, 061./255, 041./255)
-            elif _scheme == 7:  # Patrimoine culturel (dark green)
-                color = (232./255, 061./255, 041./255)
-            elif _scheme == 10:  # ESRF blue
+            elif _scheme == 6:  # SOLEIL yellow
+                color = (251./255, 186./255, 007./255)
+            elif _scheme == 6:  # Dark purple
+                color = (095./255, 060./255, 140./255)
+            elif _scheme == 7:  # ESRF blue
                 color = (019./255, 037./255, 119./255)
-            # elif _scheme == 3:  # Light green
-            #     color = (081. / 255, 160. / 255, 038. / 255)
-            # elif _scheme == 4:  # magenta
-            #     color = (175. / 255, 000. / 255, 124. / 255)
-            # elif _scheme == 5:  # dark orange
-            #     color = (237. / 255, 119. / 255, 003. / 255)
             return color
         else:
             print('Colour palette does not exist')
