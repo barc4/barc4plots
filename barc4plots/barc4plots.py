@@ -1685,22 +1685,18 @@ class PlotManager:
             color = cm.binary
         elif _scheme == 2:  # Viridis (perceptually uniform colors)
             color = cm.viridis
-        elif _scheme == 3:  # red(1)-yellow-green-blue(0) - Jet
+        elif _scheme == 3:  # Magma (perceptually uniform colors)
+            color = cm.magma
+        elif _scheme == 4:  # red(1)-yellow-green-blue(0) - Jet
             color = cm.jet
-        elif _scheme == 4:  # Inverted Cube helix - adds colour to SRW
-            color = cm.cubehelix_r
-        elif _scheme == 5:  # Cube helix
-            color = cm.cubehelix
-        elif _scheme == 6:  # phase - PyNx
+        elif _scheme == 5:  # phase - PyNx
             color = cm.hsv
-        elif _scheme == 7:  # red(1)/white/black(0) diverging
+        elif _scheme == 6:  # red(1)/white/black(0) diverging
             color = cm.RdGy_r
-        elif _scheme == 8:  # Diverging France
+        elif _scheme == 7:  # Diverging France
             color = cm.RdBu
-        elif _scheme == 9:  # Thermal plot
+        elif _scheme == 8:  # Thermal plot
             color = cm.plasma
-        elif _scheme == 10:  # Inverted thermal plot
-            color = cm.plasma_r
         else:              # give by hand the desired
             color = _scheme
         return color
